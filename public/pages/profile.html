@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your Profile - MetaPlay</title>
+
+  <!-- Google Font: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="/stylesheets/style.css" />
+
+  <!-- Injected navbar -->
+  <script src="/js/header.js" defer></script>
+
+  <!-- Vue (if you still need it) -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+</head>
+
+<body class="app-page">
+  <div class="page-wrapper">
+    <!-- DYNAMIC NAVBAR (injects <header>...</header>) -->
+    <div id="header-include"></div>
+
+    <div id="app">
+      <main class="main-content" role="main" aria-label="User Profile and Reviews">
+        <!-- PROFILE SECTION -->
+        <section class="profile-section">
+          <div class="profile-header">
+            <div class="profile-info">
+              <h2>Your Profile</h2>
+              <div class="profile-details">
+                <div><strong>Username:</strong> {{ user.username }}</div>
+                <div><strong>Email:</strong> {{ user.email }}</div>
+                <div><strong>Role:</strong> {{ user.role }}</div>
+                <div><strong>Bio:</strong> {{ user.bio || '(No bio provided)' }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="profile-actions">
+            <button @click="goToEditProfile" class="register-button edit-profile-btn" type="button">
+              Edit Profile
+            </button>
+          </div>
+        </section>
+
+        <!-- RECENT REVIEWS -->
+        <section style="align-items: center">
+          <h3>Recent Reviews</h3>
+
+          <div v-if="reviews.length === 0" class="message-info" style="text-align:center; padding:1.5rem;">
+            You have not submitted any reviews yet.
+          </div>
+
+          <div v-else>
+            <table class="table profile-reviews-table" role="table" aria-label="Most recent game reviews">
+              <thead>
+                <tr>
+                  <th>Game</th>
+                  <th>Release Date</th>
+                  <th>Rating</th>
+                  <th>Review</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="review in sortedReviews.slice(0,3)" :key="review.id">
+                  <td class="game-title-cell">
+                    <img v-if="review.gameData?.background_image" src="/images/placeholder.png"
+                      :src="review.gameData.background_image" alt="Cover art" class="mini-game-thumb" />
+                    <img v-else src="/images/placeholder.png" alt="No cover art" class="mini-game-thumb" />
+                    <span>{{ review.gameData?.name || 'Loading...' }}</span>
+                  </td>
+                  <td>{{ review.gameData?.released || 'N/A' }}</td>
+                  <td>
+                    <span class="rating-val">
+                      {{ typeof review.rating==='number'
+                      ? (review.rating)
+                      : 'N/A' }} / 5
+                    </span>
+                  </td>
+                  <td><span class="review-text">{{ review.review || '(No review text)' }}</span></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="see-all-btn-wrapper" style="text-align:center; margin-top:1rem;">
+              <a href="/pages/my_reviews.html" class="register-button see-all-btn" aria-label="See all my reviews">
+                See all my reviews
+              </a>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer>
+      <div class="container footer-content">2025 MetaPlay.</div>
+    </footer>
+  </div>
+
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        user: null,
+        reviews: []
+      },
+      mounted() {
+        fetch('/get-user', { credentials: 'include' })
+          .then(r => { if (!r.ok) throw ''; return r.json() })
+          .then(u => {
+            this.user = u;
+            return fetch('/user-review', { credentials: 'include' });
+          })
+          .then(r => r.json())
+          .then(data => {
+            this.reviews = data.map(row => ({
+              ...row,
+              id: row.gameId,
+              gameData: null
+            }));
+            this.reviews.forEach(this.fetchGameData);
+          })
+          .catch(() => { window.location = '/pages/login.html' });
+      },
+      methods: {
+        goToEditProfile() {
+          window.location = '/pages/edit_profile.html';
+        },
+        async fetchGameData(review) {
+          try {
+            const r = await fetch(
+              `/rawg/games/${review.gameId}?key=19147b4165274bd7a0942d7c63ca6d67`
+            );
+            review.gameData = await r.json();
+          } catch {
+            review.gameData = null;
+          }
+        }
+      },
+      computed: {
+        sortedReviews() {
+          return [...this.reviews]
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

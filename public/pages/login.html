@@ -1,0 +1,120 @@
+<!-- public/pages/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - MetaPlay</title>
+
+  <!-- Google Font: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Main stylesheet -->
+  <link rel="stylesheet" href="/stylesheets/style.css" />
+
+  <!-- Vue.js (for reactive login form) -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+
+  <!-- Dynamic Navbar (injects the shared <header>) -->
+  <script src="/js/header.js" defer></script>
+</head>
+
+<body class="auth-page">
+  <div class="page-wrapper">
+    <!-- DYNAMIC HEADER PLACEHOLDER -->
+    <div id="header-include"></div>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content" role="main">
+      <div class="container">
+        <div class="login-card">
+          <h2>Welcome Back</h2>
+          <p class="card-subtitle">Log in to continue managing your games, wishlists, and reviews.</p>
+          <div id="app">
+            <form @submit.prevent="login" id="loginForm" class="login-form form-wrapper">
+              <div class="form-group">
+                <label for="username">Username</label>
+                <input id="username" type="text" v-model="username" required placeholder="Your username" />
+              </div>
+
+              <div class="form-group">
+                <label for="password">Password</label>
+                <input id="password" type="password" v-model="password" required placeholder="Your password" />
+              </div>
+
+              <button type="submit" class="register-button">Login</button>
+              <p id="errorMsg" class="error" v-if="error">{{ error }}</p>
+            </form>
+
+            <div class="separator">OR</div>
+
+            <a href="/auth/google" class="btn-google-dark">
+              <img class="google-icon" src="https://developers.google.com/identity/images/g-logo.png" alt="" />
+              <span class="google-text">Sign in with Google</span>
+            </a>
+
+            <p class="alt-action">
+              Don't have an account?
+              <a href="/pages/registration.html">Sign up here</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container footer-content">2025 MetaPlay.</div>
+    </footer>
+  </div>
+
+  <!-- LOGIN FORM LOGIC -->
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        username: '',
+        password: '',
+        error: ''
+      },
+      methods: {
+        async login() {
+          this.error = '';
+          try {
+            const res = await fetch('/auth', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                username: this.username,
+                password: this.password
+              })
+            });
+
+            if (!res.ok) {
+              const data = await res.json();
+              this.error = data.error || 'Invalid credentials.';
+            } else {
+              window.location.replace('/pages/dashboard.html');
+            }
+          } catch (err) {
+            console.error('login error:', err);
+            this.error = 'Server error. Please try again later.';
+          }
+        }
+      }
+    });
+
+    // If already authenticated, redirect immediately
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('/get-user', { credentials: 'include' }).then(res => {
+        if (res.ok) {
+          window.location.replace('/pages/dashboard.html');
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

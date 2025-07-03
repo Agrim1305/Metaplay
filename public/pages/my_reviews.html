@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Reviews – MetaPlay</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/stylesheets/style.css" />
+
+  <script src="/js/header.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js" defer></script>
+</head>
+
+<body>
+  <div class="page-wrapper">
+    <div id="header-include"></div>
+    <div id="app">
+      <main class="main-content">
+        <div class="container">
+          <a href="/pages/profile.html" class="btn-back">Back to Profile</a>
+          <h2 style="margin:1.5rem 0 1rem;">My Reviews</h2>
+          <div v-if="reviews.length === 0" class="message-info" style="text-align:center; margin-top:3rem;">
+            You have not submitted any reviews yet.
+          </div>
+          <div v-else>
+            <table class="table" aria-label="User submitted game reviews">
+              <thead>
+                <tr>
+                  <th>Game</th>
+                  <th>Rating</th>
+                  <th>Review</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in sortedReviews" :key="r.gameId">
+                  <td class="game-title-cell">
+                    <img v-if="r.gameData?.background_image" src="/images/placeholder.png" :src="r.gameData.background_image" alt="Cover art"
+                      class="mini-game-thumb" />
+                    <img v-else src="/images/placeholder.png" alt="No cover art" class="mini-game-thumb" />
+                    <span>{{ r.gameData?.name || r.gameName }}</span>
+                  </td>
+                  <td>
+                    <div v-if="!r.editing" class="rating-flex" role="img"
+                      :aria-label="`Rating ${r.rating} out of 5 stars`">
+                      <span v-for="n in 5" :key="n" :class="['star', { filled: n <= r.rating }]">★</span>
+                    </div>
+                    <div v-else class="rating-flex" role="group"
+                      :aria-label="`Set rating for ${r.gameData?.name || r.gameName}`">
+                      <span v-for="n in 5" :key="n" :class="['star', { filled: n <= r.editRating }]"
+                        @click="r.editRating = n" role="button" :aria-pressed="n <= r.editRating" tabindex="0"
+                        @keydown.enter="r.editRating = n">★</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div v-if="!r.editing">{{ r.review || '(No review text)' }}</div>
+                    <div v-else>
+                      <input type="text" maxlength="500" v-model="r.editText" class="review-edit-input"
+                        aria-label="Edit review text" />
+                    </div>
+                  </td>
+                  <td class="edit-cell">
+                    <button type="button" v-if="!r.editing" class="action-btn" @click="editReview(r)">Edit</button>
+                    <button type="button" v-if="!r.editing" class="action-btn" @click="deleteReview(r)">Delete</button>
+                    <div v-else class="review-actions">
+                      <button type="button" class="btn-primary" @click="saveReview(r)">Save</button>
+                      <button type="button" class="btn-primary" @click="cancelEdit(r)">Cancel</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+    <footer>
+      <div class="container footer-content">2025 MetaPlay.</div>
+    </footer>
+  </div>
+  <script src="/js/toast.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      new Vue({
+        el: '#app',
+        data: { reviews: [] },
+        mounted() { this.fetchUserReviews() },
+        methods: {
+          async fetchUserReviews() {
+            const res = await fetch('/user-review', { credentials: 'include', cache: 'no-store' });
+            const data = await res.json();
+            data.forEach(r => {
+              r.editing = false;
+              r.editRating = r.rating;
+              r.editText = r.review;
+              r.gameData = null;
+              this.fetchGameData(r);
+            });
+            this.reviews = data;
+          },
+          async fetchGameData(r) {
+            try {
+              const res = await fetch(`/rawg/games/${r.gameId}`, { credentials: 'include' });
+              r.gameData = await res.json();
+            } catch {
+              r.gameData = null;
+            }
+          },
+          editReview(r) { r.editing = true },
+          async saveReview(r) {
+            const res = await fetch(`/user-review/${r.gameId}`, {
+              method: 'PUT',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ rating: r.editRating, review: r.editText })
+            });
+            if (res.ok) {
+              r.rating = r.editRating;
+              r.review = r.editText;
+              r.editing = false;
+              showToast('Review saved.');
+            } else {
+              showToast('Failed to save');
+            }
+          },
+          cancelEdit(r) { r.editing = false },
+          async deleteReview(r) {
+            const name = r.gameData?.name || r.gameName;
+            if (!confirm(`Delete review for “${name}”?`)) return;
+            const res = await fetch(`/user-review/${r.gameId}`, {
+              method: 'DELETE',
+              credentials: 'include'
+            });
+            if (res.ok) {
+              this.reviews = this.reviews.filter(x => x.gameId !== r.gameId);
+              showToast('Review deleted.');
+            } else {
+              showToast('Failed to delete');
+            }
+          }
+        },
+        computed: {
+          sortedReviews() {
+            return this.reviews
+              .slice()
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          }
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

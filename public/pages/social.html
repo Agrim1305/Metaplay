@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="/js/toast.js" defer></script>
+  <title>Social - MetaPlay</title>
+
+  <!-- Google Font: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="/stylesheets/style.css" />
+
+  <!-- Navbar injector -->
+  <script src="/js/header.js" defer></script>
+  <!-- Page logic -->
+  <script src="/js/social.js" defer></script>
+</head>
+
+<body class="app-page">
+  <div class="page-wrapper">
+    <div id="header-include"></div>
+
+    <main class="main-content" role="main">
+      <section class="card-wrapper">
+        <div class="browse-header">
+          <h2 class="browse-title">Social</h2>
+          <a href="/pages/group_create.html" class="btn-primary">Create a Group</a>
+        </div>
+
+        <!-- User Search Section -->
+        <div class="section">
+          <h3>Find Users</h3>
+          <div class="search-container">
+            <input type="text" id="userSearch" placeholder="Search for users..." class="search-input">
+            <button type="button" id="searchUsers" class="btn-primary">Search</button>
+          </div>
+          <div id="userSearchResults" class="card"></div>
+        </div>
+
+        <!-- Friend Requests Section -->
+        <div class="section">
+          <h3>Friend Requests</h3>
+          <div id="friendRequests" class="card"></div>
+        </div>
+
+        <!-- Current Friends Section -->
+        <div class="section">
+          <h3>Your Friends</h3>
+          <div id="friendsList" class="card"></div>
+        </div>
+
+        <!-- Group Search Section -->
+        <div class="section">
+          <h3>Find Groups</h3>
+          <div class="search-container">
+            <input type="text" id="groupSearch" placeholder="Search for groups..." class="search-input">
+            <button type="button" id="searchGroups" class="btn-primary">Search</button>
+          </div>
+          <div id="groupSearchResults" class="card"></div>
+        </div>
+
+        <!-- Your Groups Section -->
+        <div class="section">
+          <h3>Your Groups</h3>
+          <div id="groupsList" class="card"></div>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <div class="container footer-content">2025 MetaPlay.</div>
+    </footer>
+  </div>
+</body>
+
+</html>

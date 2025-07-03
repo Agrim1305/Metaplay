@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Profile - MetaPlay</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/stylesheets/style.css" />
+  <script src="/js/header.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+  <script src="/js/toast.js"></script>
+  <script src="/js/edit_profile.js"></script>
+</head>
+
+<body>
+  <div class="page-wrapper">
+    <!-- DYNAMIC HEADER PLACEHOLDER -->
+    <div id="header-include"></div>
+
+    <div id="app">
+      <main class="main-content" role="main">
+        <section class="container">
+          <h2>Edit Profile</h2>
+
+          <form @submit.prevent="saveProfile" class="edit-form" v-if="user" autocomplete="off">
+            <div class="form-group">
+              <label for="new-username">New Username</label>
+              <input type="text" id="new-username" v-model="form.username" placeholder="Leave blank to keep current"
+                autocomplete="off" />
+            </div>
+
+            <div class="form-group">
+              <label for="new-password">New Password</label>
+              <input type="password" id="new-password" v-model="form.password" placeholder="Leave blank to keep current"
+                autocomplete="new-password" />
+            </div>
+
+            <div class="form-group">
+              <label for="new-bio">Bio</label>
+              <textarea id="new-bio" v-model="form.bio" rows="4" placeholder="Update your bio here"></textarea>
+            </div>
+
+            <div class="button-row">
+              <button type="submit" class="register-button">
+                Save Changes
+              </button>
+              <button type="button" class="register-button secondary" @click="goBack">
+                Back to Profile
+              </button>
+            </div>
+
+            <p v-if="message" class="success">{{ message }}</p>
+            <p v-if="error" class="error">{{ error }}</p>
+          </form>
+        </section>
+      </main>
+
+
+    </div>
+    <footer>
+      <div class="container footer-content">2025 MetaPlay.</div>
+    </footer>
+  </div>
+
+  <script>
+
+  </script>
+</body>
+
+</html>

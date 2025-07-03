@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - MetaPlay</title>
+
+  <!-- Google Font: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Global stylesheet (header, footer, resets, etc.) -->
+  <link rel="stylesheet" href="/stylesheets/style.css" />
+
+  <!-- SCRIPTS: Header then Dashboard logic -->
+  <script src="/js/header.js" defer></script>
+  <script src="/js/toast.js" defer></script>
+  <script src="/js/dashboard.js" defer></script>
+</head>
+
+<body data-page="dashboard" class="app-page">
+  <div class="page-wrapper">
+    <!-- DYNAMIC HEADER PLACEHOLDER -->
+    <div id="header-include"></div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content" role="main">
+      <div class="container">
+        <!-- Welcome Banner -->
+        <section class="welcome-message" aria-label="Welcome">
+          <h2>Welcome, <span id="username">User</span>!</h2>
+          <p>Here's your activity overview:</p>
+        </section>
+
+        <!-- Dashboard Grid: User Sections and Trends -->
+        <div class="dashboard-row">
+          <!-- Global Game Trends -->
+          <div class="dashboard-row">
+            <section class="section" aria-labelledby="trending-title">
+              <h3 id="trending-title">Trending This Week</h3>
+              <div class="card-grid" id="trendingGamesGrid"></div>
+              <button type="button" id="trendingSeeAll" class="action-btn" aria-label="See all trending games">See
+                All</button>
+            </section>
+            <section class="section" aria-labelledby="coming-soon-title">
+              <h3 id="coming-soon-title">Coming Soon</h3>
+              <div class="card-grid" id="comingSoonGrid"></div>
+              <button type="button" id="comingSoonSeeAll" class="action-btn" aria-label="See all coming soon games">See
+                All</button>
+            </section>
+          </div>
+
+          <!-- User's Games -->
+          <div class="dashboard-row">
+            <section class="section" aria-labelledby="currently-playing-title">
+              <h3 id="currently-playing-title">Currently Playing</h3>
+              <div class="card-grid" id="currentGamesGrid"></div>
+              <button type="button" id="currentSeeAll" class="action-btn"
+                aria-label="See all games you are currently playing">See All</button>
+            </section>
+            <section class="section" aria-labelledby="wishlist-title">
+              <h3 id="wishlist-title">Wishlist</h3>
+              <div class="card-grid" id="wishlistedGamesGrid"></div>
+              <button type="button" id="wishlistSeeAll" class="action-btn"
+                aria-label="See all games in your wishlist">See All</button>
+            </section>
+            <section class="section" aria-labelledby="completed-title">
+              <h3 id="completed-title">Completed</h3>
+              <div class="card-grid" id="completedGamesGrid"></div>
+              <button type="button" id="completedSeeAll" class="action-btn" aria-label="See all completed games">See
+                All</button>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- GAME DETAILS MODAL -->
+    <div id="gameModal" class="modal-overlay hidden" aria-hidden="true" tabindex="-1">
+      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-label="Game Details">
+        <button type="button" class="modal-close-btn" aria-label="Close details modal">&times;</button>
+        <img id="modalCover" class="modal-cover"
+          src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Game Cover" />
+        <div class="section" style="border-radius: 0px; min-height: 400px">
+          <h2 id="modalTitle">Game Title</h2>
+          <p class="modal-meta">
+            <span id="modalRelease">Release Date: N/A</span>
+            <span id="modalRating"></span>
+          </p>
+          <p id="modalDesc"></p>
+          <!-- Modal review section: stars, textarea, save -->
+          <div id="modalReviewSection" style="display:none;">
+            <form id="reviewForm" autocomplete="off">
+              <label for="modalReviewTextarea">Your Review:</label>
+              <textarea id="modalReviewTextarea" placeholder="Write your review..." rows="3"></textarea>
+              <div id="modalStarRating" class="star-container" aria-label="Rating">
+                <!-- JS will generate ★★★★★ here -->
+              </div>
+              <button type="submit" class="save-btn btn-primary" style="margin-top:1.1rem;">Save</button>
+            </form>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="addToWishlist" class="action-btn">Wishlist</button>
+          <button type="button" id="addToCurrent" class="action-btn">Playing</button>
+          <button type="button" id="addToCompleted" class="action-btn">Completed</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container footer-content">
+        2025 MetaPlay.
+      </div>
+    </footer>
+  </div>
+
+
+  <!-- MODAL SCROLL REVEAL LOGIC -->
+  <script>
+    // This enables the "show actions only at bottom" logic for your modal.
+    document.addEventListener('DOMContentLoaded', function () {
+      function enableModalRevealOnScroll() {
+        const modalBody = document.querySelector('.section');
+        const modalActions = document.querySelector('.modal-actions');
+        if (!modalBody || !modalActions) return;
+        function checkScroll() {
+          // If not scrollable (short modal), always show
+          if (modalBody.scrollHeight <= modalBody.clientHeight + 2) {
+            modalActions.classList.add('visible');
+            return;
+          }
+          // Show buttons if scrolled to bottom
+          const atBottom = Math.abs(modalBody.scrollHeight - modalBody.scrollTop - modalBody.clientHeight) < 2;
+          if (atBottom) {
+            modalActions.classList.add('visible');
+          } else {
+            modalActions.classList.remove('visible');
+          }
+        }
+        modalBody.addEventListener('scroll', checkScroll);
+        // In case modal content loads dynamically, listen to changes as well (optional)
+        new MutationObserver(checkScroll).observe(modalBody, { childList: true, subtree: true });
+        checkScroll();
+      }
+      // You should call this whenever the modal is opened (here: initial run)
+      enableModalRevealOnScroll();
+    });
+  </script>
+</body>
+
+</html>

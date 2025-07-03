@@ -1,0 +1,45 @@
+<!-- public/pages/auth_required.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Authentication Required - MetaPlay</title>
+
+  <!-- Google Font: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Global stylesheet (header, footer, resets, etc.) -->
+  <link rel="stylesheet" href="/stylesheets/style.css" />
+
+  <!-- DYNAMIC NAVBAR (injects <header>...</header>) -->
+  <script src="/js/header.js" defer></script>
+</head>
+
+<body class="auth-page">
+  <div class="page-wrapper">
+    <!-- DYNAMIC HEADER PLACEHOLDER -->
+    <div id="header-include"></div>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content" role="main">
+      <div class="container">
+        <div class="auth-card">
+          <h2>Authentication Required</h2>
+          <p>You must be logged in or register for an account to access that page.</p>
+          <a href="/pages/login.html" class="btn-primary">Log In</a>
+          <div class="separator">OR</div>
+          <a href="/pages/registration.html" class="btn-primary">Register</a>
+        </div>
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container footer-content">2025 MetaPlay.</div>
+    </footer>
+  </div>
+</body>
+
+</html>

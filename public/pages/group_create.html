@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Group - MetaPlay</title>
+  <link rel="stylesheet" href="/stylesheets/style.css">
+<!-- Google Font: Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+<!-- Shared styles -->
+  <!-- Dynamic Navbar -->
+  <script src="/js/header.js" defer></script>
+</head>
+<body class="app-page">
+  <div class="page-wrapper">
+    <div id="header-include"></div>
+    <main class="main-content" role="main">
+      <section class="social-section">
+        <h2>Create a New Group</h2>
+        <form id="groupCreateForm" class="group-create-form">
+          <label for="groupName">Group Name</label>
+          <input type="text" id="groupName" name="groupName" required>
+
+          <label for="groupDescription">Description</label>
+          <textarea id="groupDescription" name="groupDescription" rows="4"></textarea>
+
+          <button type="submit" class="action-btn">Create Group</button>
+        </form>
+        <div id="createGroupMessage"></div>
+      </section>
+    </main>
+    <footer>
+      <div class="container footer-content">2025 MetaPlay.</div>
+    </footer>
+  </div>
+  <script>
+    document.getElementById('groupCreateForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const name = document.getElementById('groupName').value.trim();
+      const description = document.getElementById('groupDescription').value.trim();
+      const messageDiv = document.getElementById('createGroupMessage');
+      messageDiv.textContent = '';
+      if (!name) {
+        messageDiv.textContent = 'Group name is required.';
+        return;
+      }
+      try {
+        const response = await fetch('/api/groups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name, description })
+        });
+        if (!response.ok) throw new Error('Failed to create group');
+        messageDiv.textContent = 'Group created! Redirecting...';
+        setTimeout(() => {
+          window.location.href = '/pages/social.html';
+        }, 1200);
+      } catch (err) {
+        messageDiv.textContent = 'Error: ' + (err.message || 'Failed to create group');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>MetaPlay Admin - Users List</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/stylesheets/style.css" />
+
+  <script src="/js/header.js" defer></script>
+  <script src="/js/toast.js"></script>
+  <script src="/js/admin.js"></script>
+  <script>
+    // redirect non-admin immediately
+    (async () => {
+      const resp = await fetch('/get-user', { credentials: 'include' });
+      if (!resp.ok) return window.location.replace('/pages/auth_required.html');
+      const user = await resp.json();
+      if (user.role !== 'admin') {
+        return window.location.replace('/pages/accessDenied.html');
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <div id="header-include"></div>
+  <div class="page-wrapper">
+    <div class="container" style="display: flex; justify-content: center; margin-top: 6rem;">
+      <div class="admin-container" style="min-width: 1400px; min-height: 800px;">
+        <h2>Current Users</h2>
+        <div id="userTable" class="table-wrapper"></div>
+      </div>
+    </div>
+    <footer>
+      <div class="container footer-content">2025 MetaPlay.</div>
+    </footer>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div id="confirmModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="section" style="max-height: 200px">
+        <h3 id="confirmText">Are you sure?</h3>
+        <div class="modal-actions1">
+          <button type="button" id="confirmOk" class="btn-primary">OK</button>
+          <button type="button" id="confirmCancel" class="btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="section" style="min-height: 640px">
+        <h3>Edit User</h3>
+        <form id="editForm">
+          <input type="hidden" id="editUserId" />
+          <input type="hidden" id="editOriginalRole" />
+
+          <label for="editUsername">Username</label>
+          <input type="text" id="editUsername" required />
+
+          <label for="editEmail">Email</label>
+          <input type="email" id="editEmail" required />
+
+          <label for="editBio">Bio</label>
+          <textarea id="editBio" rows="3"></textarea>
+
+          <label for="editRole">Role</label>
+          <select id="editRole" required>
+            <option value="user">user</option>
+            <option value="admin">admin</option>
+          </select>
+
+          <div class="modal-actions1">
+            <button type="submit" id="editSave" class="btn-primary">Save</button>
+            <button type="button" id="editCancel" class="btn-secondary">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
