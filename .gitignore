@@ -109,3 +109,4 @@ dist
 
 # VSCode configs
 .vscode/
+.env
