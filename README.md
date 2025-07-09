@@ -1,15 +1,4 @@
-# Group Repository for COMP SCI 2207/7207 Web & Database Computing Web Application Project (2023 Semester 1)
-
-Your group's shared repository for the WDC 2023 Web App Project.
-
-Auto commit/push/sync to Github is disabled by default in this repository.
-- Enable the GitDoc extension to use this fucntionality (either in your VSCode settings, or in the Dev Container settings)
-
-See [HERE](https://myuni.adelaide.edu.au/courses/85266/pages/2023-web-application-group-project-specification) for the project specification.
-
-We recommend using the 'Shared Repository Model (Branch & Pull)' to collaborate on your work in this single repostory.
-- You can read more about collaborating on GitHub repositories [HERE](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests)
-- When working on the same file at the same time, the 'Live Share' feature in VSCode can also help.
+# Group Repository for COMP SCI 2207/7207 Web & Database Computing Web Application Project (2025 Semester 1)
 
 ## Project Description
 MetaPlay is a web application that allows users to find, interact with, and follow video games, accessing live data from the RAWG Video Games Database API, and socialise with other gamers. MetaPlay’s target audience consists of gamers, both the casual gamer who plays mobile games and the hardcore PC gamer or professional gamer. MetaPlay will have a clean, user-friendly interface that allows users to search through a massive collection of games across various platforms, genres, and popularity rankings. Users will be able to build and manage personalised game collections, keep track of played and wish listed games, and search for details like ratings, release dates, descriptions, screenshots, and player counts. MetaPlay will have search and filtering features to make it easy to find games based on genre, platform, release year, or user ratings. Users will also be able to contribute reviews and ratings, join groups, and make friends, helping to shape a dynamic and community-driven experience.
