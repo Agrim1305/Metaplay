@@ -26,17 +26,24 @@ try {
     queueLimit: 0
   });
 
-  // Example: test a connection on startup (wrapped in an async IIFE)
+  // Test a connection on startup (wrapped in an async IIFE).
   (async () => {
     try {
       const conn = await pool.getConnection();
       conn.release();
+      console.log(`[db] Connected to MySQL at ${DB_HOST} / ${DB_NAME}`);
     } catch (err) {
+      // Log the REAL reason before exiting so crash loops are diagnosable.
+      console.error('[db] Connection test failed:', err.code || err.message);
+      console.error('[db] host=%s user=%s db=%s', DB_HOST, DB_USER, DB_NAME);
+      console.error(err);
       process.exit(1);
     }
   })();
 
 } catch (err) {
+  console.error('[db] Failed to create pool:', err.message);
+  console.error(err);
   process.exit(1);
 }
 
