@@ -1130,3 +1130,94 @@ body .card-wrapper {
 @media (max-width: 720px) {
   #userTable .admin-table { min-width: 640px; }
 }
+/* ================================================================
+   LANDING PAGE — two-column hero (left pitch / right auth)
+   Splits on desktop, stacks on mobile. Reuses existing card + button
+   styles; only adds the split layout and the left intro column.
+   ================================================================ */
+.landing-split {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 2.5rem;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* LEFT: the pitch. Vertically centred next to the auth card. */
+.landing-intro {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem 0.5rem;
+}
+.landing-title {
+  font-size: 2.4rem;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  color: var(--text-main, #fff);
+}
+.landing-lead {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--text-muted, #c9c9d2);
+  margin: 0 0 1.5rem;
+}
+.landing-points {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.landing-points li {
+  position: relative;
+  padding-left: 1.6rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text-muted, #c9c9d2);
+}
+.landing-points li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: var(--accent, #e94560);
+  font-weight: 700;
+}
+.landing-points strong { color: var(--text-main, #fff); }
+
+/* RIGHT: the auth card column. Fixed comfortable width on desktop. */
+.landing-auth {
+  flex: 0 0 380px;
+  display: flex;
+  align-items: center;
+}
+.landing-auth .login-card {
+  width: 100%;
+  max-width: 380px;     /* override the global 480px so it fits the column */
+  margin: 0;
+}
+.auth-heading { margin: 0 0 0.4rem; }
+
+/* STACK on tablet/mobile: intro on top, auth card below, both full width. */
+@media (max-width: 860px) {
+  .landing-split {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.8rem;
+    max-width: 480px;
+  }
+  .landing-intro {
+    text-align: center;
+    align-items: center;
+    padding: 0;
+  }
+  .landing-title { font-size: 2rem; }
+  .landing-points { text-align: left; }   /* keep bullets readable */
+  .landing-auth { flex: 1 1 auto; width: 100%; }
+  .landing-auth .login-card { max-width: 100%; }
+}

@@ -17,33 +17,42 @@
     <main class="main-content1" role="main">
       <div class="container">
 
-        <!--LOGIN CARD-->
-        <div class="login-card">
-          <h2>Welcome to MetaPlay</h2>
-          <p class="card-subtitle">
-            Your personalized gaming hub for discovering the latest titles,
-            tracking play sessions, building wishlists, and sharing reviews with
-            friends!
-          </p>
+        <!-- TWO-COLUMN LANDING: left = pitch, right = auth actions -->
+        <div class="landing-split">
 
-          <!--Register button-->
-          <a href="/pages/registration.html" class="btn-primary1">
-            Register
-          </a>
+          <!-- LEFT: welcome + what the site does -->
+          <section class="landing-intro">
+            <h1 class="landing-title">Welcome to MetaPlay</h1>
+            <p class="landing-lead">
+              Your personalized gaming hub — everything you play, want to play,
+              and have an opinion about, in one place.
+            </p>
+            <ul class="landing-points">
+              <li><strong>Discover</strong> the latest titles and what's coming soon.</li>
+              <li><strong>Track</strong> what you're playing, completed, and wishlisted.</li>
+              <li><strong>Review</strong> games and share ratings with friends.</li>
+              <li><strong>Connect</strong> with other players and build your circle.</li>
+            </ul>
+          </section>
 
-          <!--Login button-->
-          <a href="/pages/login.html" class="btn-primary1">
-            Login
-          </a>
+          <!-- RIGHT: auth actions -->
+          <section class="landing-auth">
+            <div class="login-card">
+              <h2 class="auth-heading">Get started</h2>
+              <p class="card-subtitle">Create an account or sign in to continue.</p>
 
-          <!--Separator-->
-          <div class="separator">OR</div>
+              <a href="/pages/registration.html" class="btn-primary1">Register</a>
+              <a href="/pages/login.html" class="btn-primary1">Login</a>
 
-          <!--Google Sign-in button-->
-          <a href="/auth/google" class="btn-google-dark">
-            <img src="https://developers.google.com/identity/images/g-logo.png" alt="" class="google-icon" />
-            <span class="google-text">Sign in with Google</span>
-          </a>
+              <div class="separator">OR</div>
+
+              <a href="/auth/google" class="btn-google-dark">
+                <img src="https://developers.google.com/identity/images/g-logo.png" alt="" class="google-icon" />
+                <span class="google-text">Sign in with Google</span>
+              </a>
+            </div>
+          </section>
+
         </div>
       </div>
     </main>
