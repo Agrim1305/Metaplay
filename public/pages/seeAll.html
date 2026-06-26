@@ -21,7 +21,7 @@
     <main class="main-content" role="main">
       <section class="browse-section seeall-section">
         <div class="browse-header"
-          style="display: flex; justify-content: space-between; align-items: center; gap: 30rem;">
+          >
           <h2 id="seeAllHeader" class="browse-title" style="margin: 0;">Browse Games</h2>
           <a href="#" id="backToDashboard" class="btn-back">Dashboard</a>
         </div>
@@ -39,7 +39,7 @@
         <button type="button" class="modal-close-btn" aria-label="Close details modal">&times;</button>
         <img id="modalCover" class="modal-cover" src="/images/fallback_cover.png" alt="Game Cover" />
 
-        <div class="section" style="border-radius: 0px; min-height: 400px">
+        <div class="section modal-body" style="border-radius: 0px;">
           <h2 id="modalTitle">Game Title</h2>
           <p class="modal-meta"><span id="modalRelease">Released: N/A</span></p>
           <p id="modalDesc"></p>
@@ -67,22 +67,10 @@
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      function enableModalRevealOnScroll() {
-        const body = document.querySelector('.section');
-        const actions = document.querySelector('.modal-actions');
-        if (!body || !actions) return;
-        function checkScroll() {
-          const atBottom = Math.abs(body.scrollHeight - body.scrollTop - body.clientHeight) < 2;
-          if (body.scrollHeight <= body.clientHeight + 2 || atBottom) actions.classList.add('visible');
-          else actions.classList.remove('visible');
-        }
-        body.addEventListener('scroll', checkScroll);
-        new MutationObserver(checkScroll).observe(body, { childList: true, subtree: true });
-        checkScroll();
-      }
-      enableModalRevealOnScroll();
-    });
+    // Modal action buttons are always visible — pinned at the bottom of the
+    // modal by the three-zone CSS layout (fixed cover, scrolling body, fixed actions).
+    // The old scroll-reveal logic was removed because it hid the buttons until the
+    // user scrolled to the very bottom, which often wasn't reachable.
   </script>
 </body>
 

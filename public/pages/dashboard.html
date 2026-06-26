@@ -82,7 +82,7 @@
         <button type="button" class="modal-close-btn" aria-label="Close details modal">&times;</button>
         <img id="modalCover" class="modal-cover"
           src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Game Cover" />
-        <div class="section" style="border-radius: 0px; min-height: 400px">
+        <div class="section modal-body" style="border-radius: 0px;">
           <h2 id="modalTitle">Game Title</h2>
           <p class="modal-meta">
             <span id="modalRelease">Release Date: N/A</span>
@@ -118,36 +118,11 @@
   </div>
 
 
-  <!-- MODAL SCROLL REVEAL LOGIC -->
   <script>
-    // This enables the "show actions only at bottom" logic for your modal.
-    document.addEventListener('DOMContentLoaded', function () {
-      function enableModalRevealOnScroll() {
-        const modalBody = document.querySelector('.section');
-        const modalActions = document.querySelector('.modal-actions');
-        if (!modalBody || !modalActions) return;
-        function checkScroll() {
-          // If not scrollable (short modal), always show
-          if (modalBody.scrollHeight <= modalBody.clientHeight + 2) {
-            modalActions.classList.add('visible');
-            return;
-          }
-          // Show buttons if scrolled to bottom
-          const atBottom = Math.abs(modalBody.scrollHeight - modalBody.scrollTop - modalBody.clientHeight) < 2;
-          if (atBottom) {
-            modalActions.classList.add('visible');
-          } else {
-            modalActions.classList.remove('visible');
-          }
-        }
-        modalBody.addEventListener('scroll', checkScroll);
-        // In case modal content loads dynamically, listen to changes as well (optional)
-        new MutationObserver(checkScroll).observe(modalBody, { childList: true, subtree: true });
-        checkScroll();
-      }
-      // You should call this whenever the modal is opened (here: initial run)
-      enableModalRevealOnScroll();
-    });
+    // Modal action buttons are always visible — pinned at the bottom of the
+    // modal by the three-zone CSS layout (fixed cover, scrolling body, fixed actions).
+    // The old scroll-reveal logic was removed because it hid the buttons until the
+    // user scrolled to the very bottom, which often wasn't reachable.
   </script>
 </body>
 
