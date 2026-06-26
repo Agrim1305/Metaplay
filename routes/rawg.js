@@ -31,6 +31,20 @@ function setCached(key, data) {
   });
 }
 
+// Fetch with a hard timeout so a slow/hanging RAWG upstream fails fast with a
+// clean error instead of stalling until Railway's gateway returns a 502.
+// (This is the root cause of the intermittent 502 on the date-range /games
+// query — high latency to RAWG let the request hang with no upper bound.)
+async function fetchWithTimeout(url, ms = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Fetch details for a single game by ID
 router.get('/games/:id', async (req, res) => {
   const rawId = req.params.id;
@@ -49,7 +63,7 @@ router.get('/games/:id', async (req, res) => {
   const url = `https://api.rawg.io/api/games/${gameId}?key=${RAWG_API_KEY}`;
 
   try {
-    const rawgResp = await fetch(url);
+    const rawgResp = await fetchWithTimeout(url);
     if (!rawgResp.ok) {
       // Forward RAWG's status code (e.g. 404 or 429)
       return res
@@ -94,7 +108,7 @@ router.post('/games/batch', async (req, res) => {
 
   // Fetch uncached games in parallel
   try {
-    const fetchPromises = uncachedIds.map((id) => fetch(`https://api.rawg.io/api/games/${id}?key=${RAWG_API_KEY}`)
+    const fetchPromises = uncachedIds.map((id) => fetchWithTimeout(`https://api.rawg.io/api/games/${id}?key=${RAWG_API_KEY}`)
         .then((response) => response.json())
         .then((data) => {
           setCached(`game:${id}`, data);
@@ -109,23 +123,38 @@ router.post('/games/batch', async (req, res) => {
   }
 });
 
-// Proxy a search or listing request to RAWG.io, forwarding all query params
+// Proxy a search or listing request to RAWG.io, forwarding all query params.
+// Now cached (keyed by the full query) and timeout-bounded — this is the
+// route that was returning 502 on the slow date-range "Trending" query.
 router.get('/games', async (req, res) => {
   // Build query with API key and client parameters
   const params = new URLSearchParams({ key: RAWG_API_KEY, ...req.query }).toString();
   const url = `https://api.rawg.io/api/games?${params}`;
 
+  // Cache key = the client query (exclude the API key so it isn't stored).
+  const cacheKey = `games:${new URLSearchParams(req.query).toString()}`;
+  const cached = getCached(cacheKey);
+  if (cached) {
+    return res.json(cached);
+  }
+
   try {
-    const rawgResp = await fetch(url);
+    const rawgResp = await fetchWithTimeout(url);
     if (!rawgResp.ok) {
       return res
         .status(rawgResp.status)
         .json({ error: 'RAWG fetch failed', status: rawgResp.status });
     }
     const data = await rawgResp.json();
+    setCached(cacheKey, data);
     return res.json(data);
   } catch (err) {
-    return res.status(500).json({ error: 'Internal server error' });
+    // AbortError (timeout) or network failure: respond fast and clearly
+    // rather than letting the request hang into a gateway 502.
+    const isTimeout = err.name === 'AbortError';
+    return res
+      .status(isTimeout ? 504 : 502)
+      .json({ error: isTimeout ? 'RAWG request timed out' : 'RAWG upstream error' });
   }
 });
 
