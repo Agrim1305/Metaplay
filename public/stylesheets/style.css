@@ -1221,3 +1221,29 @@ body .card-wrapper {
   .landing-auth { flex: 1 1 auto; width: 100%; }
   .landing-auth .login-card { max-width: 100%; }
 }
+
+/* --- Landing tweaks: button alignment in card, vertical centring, top gap --- */
+
+/* Give the landing a bit more breathing room below the nav capsule. */
+.auth-page main.main-content1 {
+  padding-top: calc(var(--header-clear) + 48px);
+  justify-content: center;
+}
+
+/* Buttons inside the auth card: flush full-width, equal edges, consistent
+   spacing — overrides the differing 350px/300px max-widths that made them
+   look ragged and inset. */
+.landing-auth .login-card .btn-primary1,
+.landing-auth .login-card .btn-google-dark {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  justify-content: center;   /* centre the label/icon within the full-width button */
+}
+.landing-auth .login-card .btn-primary1 { margin: 0.55rem 0; }
+.landing-auth .login-card .btn-google-dark { margin: 0.55rem 0 0; }
+.landing-auth .login-card .separator { margin: 0.8rem 0; }
+
+/* Vertically centre the auth card against the taller intro column. */
+.landing-split { align-items: center; }
