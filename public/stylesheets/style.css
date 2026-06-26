@@ -1247,3 +1247,10 @@ body .card-wrapper {
 
 /* Vertically centre the auth card against the taller intro column. */
 .landing-split { align-items: center; }
+
+/* Make the Google button compute the same rendered width as Register/Login:
+   it has a 2px border but no border-box, so its border was adding to the
+   width. Force border-box so all three buttons are pixel-identical width. */
+.landing-auth .login-card .btn-google-dark {
+  box-sizing: border-box;
+}
