@@ -1058,38 +1058,72 @@ body .card-wrapper {
   html, body { max-width: 100%; overflow-x: hidden; }
 }
 
-/* Admin users table: let it fill the screen up to a ceiling, and if the
-   columns are genuinely too wide, scroll the TABLE (not the page) inside
-   its wrapper. The inline min-width:1400px in admin.html is replaced
-   separately; this makes the wrapper cope at any width. */
+/* ================================================================
+   ADMIN PAGE — table overflow + button spacing (corrected)
+   The JS injects <table class="admin-table"> directly into
+   #userTable, so #userTable IS the scroll container — there's no
+   separate wrapper around the table. Scroll must live on #userTable.
+   ================================================================ */
 .admin-container {
   width: 100%;
   max-width: 1400px;
+  margin: 0 auto;            /* centre the panel */
   box-sizing: border-box;
 }
-/* The wrapper scrolls horizontally at ANY screen width — the table has 6
-   columns each min 180px (~1100px floor) plus an Actions column, so on
-   anything narrower than that it must scroll rather than clip. */
+
+/* #userTable is the scroll container. Force horizontal scroll here, at
+   ALL widths, so the 6-column table (ID/Username/Email/Bio/Role/Actions)
+   can be reached by scrolling instead of being clipped at the right. */
+#userTable,
 .admin-container .table-wrapper {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
-/* The base rule sets `overflow: hidden` on every table, which CLIPS the
-   rightmost (Actions) column instead of letting the wrapper scroll it.
-   Override that here so the wrapper's scroll actually works. */
-.admin-container .table-wrapper table,
-.admin-container .table-wrapper .admin-table {
+
+/* The base `.admin-table { overflow: hidden }` is what was clipping the
+   Actions column. Override it, and give the table a real min-width so it
+   actually overflows its container (which is what triggers the scroll). */
+#userTable .admin-table,
+.admin-table {
   overflow: visible;
+  min-width: 900px;          /* forces scroll on narrow screens, fits wide ones */
 }
-/* Keep the Actions column compact so it's less likely to overflow at all,
-   and never let it shrink below its buttons' width. */
+
+/* Edit/Delete in each row: stack them with proper breathing room and a
+   consistent width, and keep the Actions column from collapsing. */
 .admin-table th:last-child,
-.admin-table td:last-child {
-  min-width: 150px;
+.admin-table td:last-child { min-width: 170px; }
+.action-btns {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;               /* was 0.5em — a touch more separation */
+  padding: 0.3rem 0;
 }
+.action-btns button {
+  width: 100%;
+  min-width: 110px;
+  margin: 0;
+}
+
+/* Edit-user modal: the Save/Cancel container is `.modal-actions1`, whose
+   only rule was flex-column with a tiny gap — that's why they looked
+   glued together. Give them real vertical separation and padding. */
+.modal-actions1 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;               /* clear space between Save and Cancel */
+  padding: 1.1rem 0 0.4rem;
+  margin-top: 0.4rem;
+}
+.modal-actions1 button {
+  width: 100%;
+  margin: 0;
+  padding: 0.75rem 1rem;     /* taller hit area, less cramped */
+}
+
 @media (max-width: 768px) {
   .admin-container { min-height: auto; padding: 1.2rem; }
-  .admin-container .table-wrapper table,
-  .admin-container .table-wrapper .admin-table { min-width: 760px; }
+  .admin-table { min-width: 760px; }
 }
