@@ -1012,15 +1012,84 @@ body .card-wrapper {
 
 /* Capsule hugs the edges tighter on small screens (override §17 tail) */
 @media (max-width: 600px) {
-  header { top: 10px; padding: 0 12px; }
+  header { top: 10px; padding: 0 10px; }
   header .header-content {
-    padding: 0.7rem 1.1rem;
-    border-radius: 22px;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    /* Logo stays put on the left; nav scrolls on the right. Keep them on
+       ONE row instead of wrapping into a ragged multi-row pile. */
+    padding: 0.55rem 0.9rem;
+    border-radius: 26px;
+    flex-wrap: nowrap;
+    gap: 0.75rem;
   }
-  header h1 a { font-size: 1.4rem; }
-  nav { gap: 1rem; flex-wrap: wrap; }
-  nav a { font-size: 0.95rem; }
-  main.main-content, main.main-content1 { padding-top: 130px; }
+  header h1 a { font-size: 1.25rem; }
+  header h1 { flex: 0 0 auto; }   /* logo never shrinks */
+
+  /* Nav becomes a single horizontal strip you can swipe through, so all
+     links (Profile / Admin / Search / Social / Logout) stay reachable
+     no matter how many there are or how narrow the screen is. */
+  nav {
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;   /* momentum scroll on iOS */
+    scrollbar-width: none;                /* hide scrollbar (Firefox) */
+    justify-content: flex-end;
+  }
+  nav::-webkit-scrollbar { display: none; }   /* hide scrollbar (WebKit) */
+  nav a {
+    font-size: 1rem;
+    white-space: nowrap;        /* never break a link across lines */
+    flex: 0 0 auto;
+  }
+  main.main-content, main.main-content1 { padding-top: 120px; }
+}
+
+/* ================================================================
+   RESPONSIVE SAFETY NET (appended)
+   Fixes two specific things: the admin table forcing a fixed
+   1400px width, and any stray element pushing horizontal overflow
+   on small screens. Everything else above already reflows.
+   ================================================================ */
+
+/* Never allow sideways scroll of the whole page on mobile */
+@media (max-width: 768px) {
+  html, body { max-width: 100%; overflow-x: hidden; }
+}
+
+/* Admin users table: let it fill the screen up to a ceiling, and if the
+   columns are genuinely too wide, scroll the TABLE (not the page) inside
+   its wrapper. The inline min-width:1400px in admin.html is replaced
+   separately; this makes the wrapper cope at any width. */
+.admin-container {
+  width: 100%;
+  max-width: 1400px;
+  box-sizing: border-box;
+}
+/* The wrapper scrolls horizontally at ANY screen width — the table has 6
+   columns each min 180px (~1100px floor) plus an Actions column, so on
+   anything narrower than that it must scroll rather than clip. */
+.admin-container .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* The base rule sets `overflow: hidden` on every table, which CLIPS the
+   rightmost (Actions) column instead of letting the wrapper scroll it.
+   Override that here so the wrapper's scroll actually works. */
+.admin-container .table-wrapper table,
+.admin-container .table-wrapper .admin-table {
+  overflow: visible;
+}
+/* Keep the Actions column compact so it's less likely to overflow at all,
+   and never let it shrink below its buttons' width. */
+.admin-table th:last-child,
+.admin-table td:last-child {
+  min-width: 150px;
+}
+@media (max-width: 768px) {
+  .admin-container { min-height: auto; padding: 1.2rem; }
+  .admin-container .table-wrapper table,
+  .admin-container .table-wrapper .admin-table { min-width: 760px; }
 }
