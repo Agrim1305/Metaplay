@@ -1,7 +1,7 @@
 // Routes for searching and fetching game details from RAWG API
+// Uses Node 18+ global fetch (no node-fetch dependency needed).
 
 const express = require('express');
-const fetch = require('node-fetch');
 const router = express.Router();
 const { ensureAuth } = require('../utils/auth');
 

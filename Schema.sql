@@ -117,12 +117,10 @@ CREATE TABLE IF NOT EXISTS Game_Reviews (
         REFERENCES MPUser(User_ID) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Create default admin user
-INSERT IGNORE INTO MPUser (Username, Password, Email, `Role`)
-VALUES (
-    'Admin',
-    '$2b$10$yu/z1er4vJUuxKx7HvFp/.rMjTF7.xezajBUcCeYa0qGRj94IWo4K', -- admin123
-    'admin@example.com',
-    'admin'
-);
-
+-- NOTE: The default admin seed (Admin / admin123) was REMOVED for security.
+-- Never ship known credentials to a public deployment.
+--
+-- To create your own admin after deploying:
+--   1. Register normally through the app UI.
+--   2. Run this once against your database, substituting your username:
+--      UPDATE MPUser SET Role = 'admin' WHERE Username = 'your_username';

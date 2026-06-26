@@ -1,0 +1,226 @@
+/* ============================================================
+   MetaPlay — layout & polish overrides
+   Load this AFTER style.css so these rules win:
+     <link rel="stylesheet" href="/stylesheets/style.css" />
+     <link rel="stylesheet" href="/stylesheets/style-overrides.css" />
+   Keeps the existing MetaPlay identity; fixes spacing,
+   proportion, the cramped grids, and the hidden modal buttons.
+   ============================================================ */
+
+/* ---- 1. Wider, more breathable page ----------------------- */
+.container {
+  max-width: 1320px;       /* was 1100 — too pinched on desktop */
+  padding: 0 40px;
+}
+main.main-content {
+  max-width: 1320px;
+  padding-top: 112px;       /* clears the fixed 70px header + air */
+  padding-bottom: 88px;
+}
+
+/* ---- 2. Welcome banner: give it room ---------------------- */
+.welcome-message {
+  width: 100%;
+  margin-bottom: 2.5rem;
+}
+.welcome-message h2 {
+  font-size: 2.4rem;
+  margin-bottom: 0.4rem;
+}
+.welcome-message p {
+  color: #b9aab0;
+  font-size: 1.1rem;
+}
+
+/* ---- 3. Dashboard layout: two clean rows, even columns ----
+   The markup nests .dashboard-row inside .dashboard-row. We make
+   the OUTER one stack vertically, and the INNER ones lay sections
+   side by side with equal width. */
+.dashboard-row {
+  gap: 2.5rem;
+}
+.dashboard-row > .dashboard-row {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+/* ---- 4. Sections: stop the cramped fixed-height scroll ----
+   The original caps sections at 540px and scrolls inside them,
+   which squeezes the cards. Let them grow with their content. */
+.section {
+  max-height: none;         /* was 540px with overflow-y:auto */
+  overflow: visible;
+  align-items: stretch;     /* was center — let the grid fill width */
+  padding: 1.6rem 1.6rem 2rem;
+  background: rgba(30, 30, 38, 0.96);
+  border: 1px solid #2c2c38;
+  border-radius: 18px;
+}
+.section h3 {
+  font-size: 1.5rem;
+  align-self: flex-start;
+  margin-bottom: 1.3rem;
+}
+
+/* ---- 5. The grid: bigger cards, auto-fitting columns ------
+   Fixed 2-column grid made cards tiny and squashed. Auto-fit on a
+   sensible min width gives larger, proportionate cards that reflow. */
+.card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ---- 6. Game cards: taller, properly proportioned --------- */
+.game-card {
+  min-height: 0;
+  max-height: none;          /* the 180px cap cropped everything */
+  border-radius: 14px;
+  border: 1px solid #343347;
+}
+.game-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(233, 69, 96, 0.28);
+}
+.game-thumb {
+  height: 230px;             /* was 170 — gives cover art room to read */
+  border-radius: 14px 14px 0 0;
+  transition: transform 0.3s ease;
+}
+.game-card:hover .game-thumb {
+  transform: scale(1.05);
+}
+.game-title-overlay {
+  font-size: 1.02rem;
+  padding: 0.7em 0.85em;
+  background: linear-gradient(to top, rgba(20,20,26,0.95) 0%, rgba(20,20,26,0.55) 70%, transparent 100%);
+  border-radius: 0;
+}
+
+/* ---- 7. "See All" button: align left, not full-width ------ */
+.section > .action-btn {
+  align-self: flex-start;
+  max-width: 160px;
+  margin-top: 1.6rem;
+}
+
+/* ---- 8. THE BUG FIX: modal action buttons always visible ---
+   The inline scroll-reveal script hides these until you scroll to
+   the bottom of the modal body, which often never happens — so the
+   Add buttons appear missing. Force them visible and lay them out. */
+.modal-actions {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  gap: 1rem;
+  padding: 1.2rem 1.6rem 1.6rem;
+  margin: 0;
+  background: #191923;
+  border-top: 1px solid #2c2c38;
+  flex-shrink: 0;
+}
+.modal-actions .action-btn {
+  margin: 0;
+  flex: 1;
+  max-width: none;
+}
+
+/* ---- 9. Modal: cap to viewport, scrollable body, pinned actions ----
+   Flex column: fixed-height cover, flexible scrolling body, pinned
+   action bar. The cover is firmly height-capped so it can't dominate;
+   the body is given a guaranteed minimum so title + description always
+   show without scrolling. */
+.modal-content {
+  max-width: 540px;
+  max-height: 86vh;
+  height: auto;
+}
+.modal-cover {
+  height: 200px;             /* firm cap so art can't swallow the modal */
+  max-height: 28vh;          /* and never more than ~quarter of screen */
+  flex-shrink: 0;
+  object-fit: cover;
+}
+.modal-content > .section {
+  max-height: none;
+  overflow-y: auto;          /* long descriptions scroll inside the body */
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 140px !important;  /* guaranteed room for title + text */
+  padding: 1.3rem 1.6rem;
+}
+.modal-content > .section h2 {
+  font-size: 1.6rem;
+  align-self: flex-start;
+  margin-bottom: 0.4rem;
+}
+#modalDesc {
+  color: #cabbc1;
+  line-height: 1.65;
+  font-size: 0.97rem;
+}
+.modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.4rem 0 0.9rem;
+  color: #b9aab0;
+}
+
+/* ---- 10. Remove button on owned cards: reveal on hover ----- */
+.game-card > button:not(.modal-close-btn) {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  font-size: 1.1rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.game-card:hover > button:not(.modal-close-btn) {
+  opacity: 1;
+}
+
+/* ---- 11. Nav underline micro-interaction ------------------ */
+nav a {
+  position: relative;
+  padding-bottom: 2px;
+}
+nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s ease;
+}
+nav a:hover::after {
+  transform: scaleX(1);
+}
+
+/* ---- 12. Card load-in stagger ----------------------------- */
+.game-card {
+  animation: card-in 0.32s ease both;
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- 13. Responsive: keep it sane on smaller screens ------- */
+@media (max-width: 768px) {
+  .container { padding: 0 20px; }
+  .card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .game-thumb { height: 190px; }
+  .modal-cover { height: 180px; }
+}
+@media (max-width: 480px) {
+  .welcome-message h2 { font-size: 1.9rem; }
+  .card-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .game-thumb { height: 160px; }
+  .modal-actions { flex-direction: column; }
+}

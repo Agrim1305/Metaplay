@@ -1,7 +1,6 @@
 // Routes for interacting with RAWG.io API
 
 const express = require('express');
-const fetch = require('node-fetch');
 const router = express.Router();
 const { ensureAuth } = require('../utils/auth');
 

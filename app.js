@@ -10,27 +10,33 @@ const pool = require('./db');
 
 const app = express();
 
+// Railway (and most PaaS hosts) sit behind a reverse proxy. Without this,
+// Express won't know the original request was HTTPS, and secure cookies break.
+app.set('trust proxy', 1);
+
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // STATIC "PUBLIC" FOLDER (CSS, JS, images, etc.)
-// Move static file serving BEFORE session/auth middleware for better performance
+// Served before session/auth middleware so static assets skip that work.
 app.use(express.static(path.resolve(__dirname, 'public')));
 
-// Session configuration optimized for performance
+// Session configuration
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'Metaplay',
+    // No hardcoded fallback: if SESSION_SECRET is unset the app should fail
+    // loudly rather than silently use a guessable secret in production.
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
+      // Only require HTTPS-only cookies in production; stays false locally.
+      secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     },
-    // Performance optimizations
     rolling: true, // Refresh session on activity
     name: 'sid', // Shorter cookie name
     unset: 'destroy' // Remove session from store when unset
@@ -59,28 +65,26 @@ app.use(async (req, res, next) => {
   }
 
   try {
-    // Single optimized query to get all user data
+    // Single query to get all user data
     const [[userData]] = await pool.execute(
       'SELECT User_ID, Username, Email, Bio, Role FROM MPUser WHERE User_ID = ?',
       [userId]
     );
 
     if (userData) {
-      // Cache the full user data in session
       req.session.userData = userData;
-
-      // Also update session flags for compatibility
       req.session.username = userData.Username;
       req.session.userId = userData.User_ID;
       req.session.isAdmin = userData.Role === 'admin';
     }
   } catch (err) {
-    // Ignore errors - user will be redirected anyway
+    // Log so a broken session lookup is visible in production logs.
+    console.error('User cache middleware error:', err.message);
   }
   return next();
 });
 
-// ROUTE‐GUARD HELPERS
+// ROUTE-GUARD HELPERS
 const showAuthRequired = (res) => res.redirect('/pages/auth_required.html');
 const showAccessDenied = (res) => res.redirect('/pages/accessDenied.html');
 
@@ -106,7 +110,6 @@ function ensureAdmin(req, res, next) {
 
   return isAdmin ? next() : showAccessDenied(res);
 }
-
 
 // Protected routes
 const protectedRoutes = {
@@ -185,11 +188,9 @@ app.get(
   '/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/pages/login.html' }),
   (req, res) => {
-    // On successful Google OAuth: Store user info in session
     req.session.username = req.user.Username;
     req.session.userId = req.user.User_ID;
     req.session.isAdmin = req.user.Role === 'admin';
-    // Redirect to the protected Dashboard
     return res.redirect('/pages/dashboard.html');
   }
 );
@@ -198,18 +199,16 @@ app.get(
 app.get('/auth/logout', (req, res, next) => {
   req.logout((err) => {
     if (err) return next(err);
-     return req.session.destroy(() => res.redirect('/'));
+    return req.session.destroy(() => res.redirect('/'));
   });
 });
 
 // /get-user endpoint with caching
 app.get('/get-user', (req, res) => {
-  // Set cache control headers
   res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
   res.setHeader('Expires', '0');
   res.setHeader('Pragma', 'no-cache');
 
-  // First check session cache
   if (req.session.userData) {
     const me = req.session.userData;
     return res.json({
@@ -221,7 +220,6 @@ app.get('/get-user', (req, res) => {
     });
   }
 
-  // Fallback to Passport user
   if (req.user) {
     const me = req.user;
     return res.json({
@@ -233,7 +231,6 @@ app.get('/get-user', (req, res) => {
     });
   }
 
-  // Last resort: basic session data
   if (req.session.username) {
     return res.json({
       userId: req.session.userId,
@@ -250,7 +247,10 @@ app.get('/get-user', (req, res) => {
 // 404 & global error handler
 app.use((req, res) => res.status(404).send('404 Not Found'));
 
+// All four args required for Express to treat this as an error handler.
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
+  console.error(err.stack);
   res.status(500).send('500 Server Error');
 });
 

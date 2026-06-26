@@ -1,0 +1,440 @@
+/* ============================================================
+   MetaPlay — layout & polish overrides
+   Load this AFTER style.css so these rules win:
+     <link rel="stylesheet" href="/stylesheets/style.css" />
+     <link rel="stylesheet" href="/stylesheets/style-overrides.css" />
+   Keeps the existing MetaPlay identity; fixes spacing,
+   proportion, the cramped grids, and the hidden modal buttons.
+   ============================================================ */
+
+/* ---- 1. Wider, more breathable page ----------------------- */
+.container {
+  max-width: 1320px;       /* was 1100 — too pinched on desktop */
+  padding: 0 40px;
+}
+main.main-content {
+  max-width: 1320px;
+  padding-top: 112px;       /* clears the fixed 70px header + air */
+  padding-bottom: 88px;
+}
+
+/* ---- 2. Welcome banner: give it room ---------------------- */
+.welcome-message {
+  width: 100%;
+  margin-bottom: 2.5rem;
+}
+.welcome-message h2 {
+  font-size: 2.4rem;
+  margin-bottom: 0.4rem;
+}
+.welcome-message p {
+  color: #b9aab0;
+  font-size: 1.1rem;
+}
+
+/* ---- 3. Dashboard layout: two clean rows, even columns ----
+   The markup nests .dashboard-row inside .dashboard-row. We make
+   the OUTER one stack vertically, and the INNER ones lay sections
+   side by side with equal width. */
+.dashboard-row {
+  gap: 2.5rem;
+}
+.dashboard-row > .dashboard-row {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+/* ---- 4. Sections: stop the cramped fixed-height scroll ----
+   The original caps sections at 540px and scrolls inside them,
+   which squeezes the cards. Let them grow with their content. */
+.section {
+  max-height: none;         /* was 540px with overflow-y:auto */
+  overflow: visible;
+  align-items: stretch;     /* was center — let the grid fill width */
+  padding: 1.6rem 1.6rem 2rem;
+  background: rgba(30, 30, 38, 0.96);
+  border: 1px solid #2c2c38;
+  border-radius: 18px;
+}
+.section h3 {
+  font-size: 1.5rem;
+  align-self: flex-start;
+  margin-bottom: 1.3rem;
+}
+
+/* ---- 5. The grid: bigger cards, auto-fitting columns ------
+   Fixed 2-column grid made cards tiny and squashed. Auto-fill on a
+   sensible min width gives 3-4 proportionate cards per row that reflow. */
+.card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 1.4rem;
+}
+
+/* ---- 6. Game cards: taller, properly proportioned --------- */
+.game-card {
+  min-height: 0;
+  max-height: none;          /* the 180px cap cropped everything */
+  border-radius: 14px;
+  border: 1px solid #343347;
+}
+.game-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(233, 69, 96, 0.28);
+}
+.game-thumb {
+  height: 200px;             /* proportional when 3-4 cards sit per row */
+  border-radius: 14px 14px 0 0;
+  transition: transform 0.3s ease;
+}
+.game-card:hover .game-thumb {
+  transform: scale(1.05);
+}
+.game-title-overlay {
+  font-size: 1.02rem;
+  padding: 0.7em 0.85em;
+  background: linear-gradient(to top, rgba(20,20,26,0.95) 0%, rgba(20,20,26,0.55) 70%, transparent 100%);
+  border-radius: 0;
+}
+
+/* ---- 7. "See All" button: align left, not full-width ------ */
+.section > .action-btn {
+  align-self: flex-start;
+  max-width: 160px;
+  margin-top: 1.6rem;
+}
+
+/* ---- 8. THE BUG FIX: modal action buttons always visible ---
+   The inline scroll-reveal script hides these until you scroll to
+   the bottom of the modal body, which often never happens — so the
+   Add buttons appear missing. Force them visible and lay them out. */
+.modal-actions {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  gap: 1rem;
+  padding: 1.2rem 1.6rem 1.6rem;
+  margin: 0;
+  background: #191923;
+  border-top: 1px solid #2c2c38;
+  flex-shrink: 0;
+}
+.modal-actions .action-btn {
+  margin: 0;
+  flex: 1;
+  max-width: none;
+}
+
+/* ---- 9. Modal: clear the fixed navbar, cap to viewport ----
+   The 70px header is fixed on top of everything. The modal overlay
+   centers in the full viewport, so the modal's top slid under the
+   navbar and its bottom (the Completed button) clipped off-screen.
+   We pad the overlay below the header and cap the modal accordingly. */
+.modal-overlay {
+  align-items: flex-start;       /* anchor near top, not dead-center */
+  padding-top: 86px;             /* clears the 70px fixed header + air */
+  padding-bottom: 24px;
+  overflow-y: auto;              /* if ever taller than screen, scroll */
+}
+.modal-content {
+  max-width: 540px;
+  max-height: calc(100vh - 140px);  /* fits below floating capsule, above viewport bottom */
+  height: auto;
+  margin: auto;                  /* horizontally centered */
+}
+.modal-cover {
+  height: 200px;             /* firm cap so art can't swallow the modal */
+  max-height: 26vh;          /* and never more than ~quarter of screen */
+  flex-shrink: 0;
+  object-fit: cover;
+}
+.modal-content > .section {
+  max-height: none;
+  overflow-y: auto;          /* long descriptions scroll inside the body */
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 120px !important;  /* guaranteed room for title + text */
+  padding: 1.3rem 1.6rem;
+}
+.modal-content > .section h2 {
+  font-size: 1.6rem;
+  align-self: flex-start;
+  margin-bottom: 0.4rem;
+}
+#modalDesc {
+  color: #cabbc1;
+  line-height: 1.65;
+  font-size: 0.97rem;
+}
+.modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.4rem 0 0.9rem;
+  color: #b9aab0;
+}
+
+/* ---- 10. Remove button on owned cards: reveal on hover ----- */
+.game-card > button:not(.modal-close-btn) {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  font-size: 1.1rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.game-card:hover > button:not(.modal-close-btn) {
+  opacity: 1;
+}
+
+/* ---- 11. Nav underline micro-interaction ------------------ */
+nav a {
+  position: relative;
+  padding-bottom: 2px;
+}
+nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s ease;
+}
+nav a:hover::after {
+  transform: scaleX(1);
+}
+
+/* ---- 12. Card load-in stagger ----------------------------- */
+.game-card {
+  animation: card-in 0.32s ease both;
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- 13. Responsive: keep it sane on smaller screens ------- */
+@media (max-width: 768px) {
+  .container { padding: 0 20px; }
+  .card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .game-thumb { height: 190px; }
+  .modal-cover { height: 180px; }
+}
+@media (max-width: 480px) {
+  .welcome-message h2 { font-size: 1.9rem; }
+  .card-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .game-thumb { height: 160px; }
+  .modal-actions { flex-direction: column; }
+}
+
+/* ============================================================
+   14. SEARCH / SEE-ALL PAGE — full-width card, wide search bar,
+       3–4 games per row.
+   The page uses .seeall-section as the card and .browse-grid for
+   results. Widen the card and let the grid fit 3–4 columns.
+   ============================================================ */
+.seeall-section {
+  max-width: 2500px;
+  width: 100%;
+  padding: 2.5rem 3rem;
+}
+/* The search bar row inside seeAll */
+.seeall-section .search-container {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  max-width: 860px;        /* longer, more expansive search field */
+  margin: 1.5rem auto 0.5rem;
+}
+.seeall-section .search-container .search-input,
+.seeall-section #seeAllSearchInput {
+  flex: 1;
+  margin-bottom: 0;
+  font-size: 1.05rem;
+  padding: 0.85rem 1.3rem;
+}
+.seeall-section .search-container .btn-primary {
+  margin: 0;
+  max-width: 140px;
+  flex-shrink: 0;
+}
+/* Results grid: 3–4 across on desktop, auto-fitting */
+.seeall-section .browse-grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.8rem;
+  margin-top: 2rem;
+}
+/* Fix the giant inline gap on the browse header (was gap: 30rem) */
+.seeall-section .browse-header {
+  gap: 1.5rem !important;
+  width: 100%;
+}
+
+/* ============================================================
+   15. SOCIAL PAGE — widen from mobile-strip to a real desktop card.
+   The page wraps everything in .card-wrapper (capped at 480px) with
+   stacked .section blocks. Widen the wrapper and lay the sections
+   out in a responsive two-column grid.
+   ============================================================ */
+body .card-wrapper {
+  max-width: 1400px;       /* was 480 — the mobile-strip look */
+  width: 100%;
+  padding: 2.5rem 2.8rem;
+}
+.social-section .browse-header,
+.card-wrapper .browse-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.8rem;
+}
+/* Lay the social sub-sections out two-up on desktop */
+.card-wrapper > .section {
+  max-width: none;
+  min-width: 0;
+  width: 100%;
+  margin-bottom: 1.4rem;
+}
+@media (min-width: 800px) {
+  .card-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.6rem 1.8rem;
+    align-items: start;
+  }
+  /* header spans both columns */
+  .card-wrapper > .browse-header {
+    grid-column: 1 / -1;
+  }
+  .card-wrapper > .section {
+    margin-bottom: 0;
+  }
+}
+
+/* ============================================================
+   16. MOBILE — make every page collapse cleanly post-deploy.
+   ============================================================ */
+@media (max-width: 800px) {
+  .card-wrapper {
+    max-width: 540px;
+    padding: 1.8rem 1.4rem;
+  }
+  .seeall-section { padding: 1.8rem 1.4rem; }
+  .seeall-section .search-container { flex-direction: column; max-width: 100%; }
+  .seeall-section .search-container .btn-primary { max-width: 100%; }
+  .seeall-section .browse-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1.2rem; }
+}
+@media (max-width: 480px) {
+  .container { padding: 0 16px; }
+  .seeall-section .browse-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .modal-overlay { padding-top: 76px; padding-left: 12px; padding-right: 12px; }
+  .modal-content { max-height: calc(100vh - 96px); }
+  .modal-actions { flex-direction: column; }
+  .modal-actions .action-btn { width: 100%; }
+}
+
+/* ============================================================
+   17. FLOATING NAVBAR — detached frosted capsule (portfolio style)
+   The original header is a full-width bar welded to the top edge.
+   This floats it: rounded, frosted, with breathing room on all
+   sides, centered, hovering over the content like the portfolio nav.
+   ============================================================ */
+header {
+  height: auto;
+  background: transparent;     /* the capsule itself carries the bg */
+  box-shadow: none;
+  backdrop-filter: none;
+  top: 16px;                   /* float it down from the very top */
+  left: 0;
+  right: 0;
+  padding: 0 32px;             /* keeps the capsule off both edges */
+  pointer-events: none;        /* let clicks pass except on the capsule */
+  box-sizing: border-box;
+}
+header .header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: auto;
+  max-width: 1020px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0.35rem 1.6rem;
+  background: rgba(22, 22, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-sizing: border-box;
+}
+header h1 {
+  margin: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+header h1 a {
+  font-size: 1.25rem;
+  line-height: 3.5rem;
+}
+nav {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+nav a {
+  font-size: 1.25rem;
+  line-height: 3.5rem;
+}
+/* Push page content down so it clears the now-floating capsule.
+   The capsule is thinner now (~16px + ~52px), so ~95px clearance. */
+main.main-content,
+main.main-content1 {
+  padding-top: 100px;
+}
+.modal-overlay {
+  padding-top: 92px;           /* clear the floating capsule too */
+}
+
+/* ============================================================
+   18. WIDER, MORE BREATHABLE CONTENT across pages
+   Stretch the content cards so they fill the screen more, with
+   generous internal padding so they don't feel cramped.
+   ============================================================ */
+.container,
+main.main-content {
+  max-width: 1480px;           /* wider than before for a roomy feel */
+}
+/* Profile card: was a tight 600px box — give it real width */
+.profile-section {
+  max-width: 1000px;
+}
+/* Dashboard sections: a touch more internal air */
+.section {
+  padding: 1.8rem 2rem 2.2rem;
+}
+/* NOTE: seeAll width/grid and social card width are defined once in
+   sections 14 & 15 above. No duplicate overrides here — single source
+   of truth so the cascade is predictable. */
+
+/* On small screens the capsule should hug the edges a bit tighter */
+@media (max-width: 600px) {
+  header { top: 10px; padding: 0 12px; }
+  header .header-content {
+    padding: 0.7rem 1.1rem;
+    border-radius: 22px;       /* softer rounded rect, not a long pill */
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  header h1 a { font-size: 1.4rem; }
+  nav { gap: 1rem; flex-wrap: wrap; }
+  nav a { font-size: 0.95rem; }
+  main.main-content, main.main-content1 { padding-top: 130px; }
+}
