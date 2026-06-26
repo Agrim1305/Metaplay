@@ -1059,71 +1059,74 @@ body .card-wrapper {
 }
 
 /* ================================================================
-   ADMIN PAGE — table overflow + button spacing (corrected)
-   The JS injects <table class="admin-table"> directly into
-   #userTable, so #userTable IS the scroll container — there's no
-   separate wrapper around the table. Scroll must live on #userTable.
+   ADMIN PAGE — final fix.
+   Root cause of the off-centre / clipped-buttons table was the base
+   rule `.admin-table th,td { min-width: 180px }` — 6 columns forced a
+   ~1080px floor, wider than the content needs, so the table overflowed
+   its container (pushed right, Actions clipped). Fix: drop the rigid
+   per-cell minimum, let the table size to its content and centre, and
+   only scroll when the screen is genuinely too narrow.
    ================================================================ */
 .admin-container {
   width: 100%;
   max-width: 1400px;
-  margin: 0 auto;            /* centre the panel */
+  margin: 0 auto;
   box-sizing: border-box;
 }
 
-/* #userTable is the scroll container. Force horizontal scroll here, at
-   ALL widths, so the 6-column table (ID/Username/Email/Bio/Role/Actions)
-   can be reached by scrolling instead of being clipped at the right. */
-#userTable,
-.admin-container .table-wrapper {
+/* The scroll container is #userTable (JS injects the table straight into
+   it). Let it scroll horizontally ONLY when content actually overflows. */
+#userTable {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-/* The base `.admin-table { overflow: hidden }` is what was clipping the
-   Actions column. Override it, and give the table a real min-width so it
-   actually overflows its container (which is what triggers the scroll). */
+/* Table sizes to its content and fills the container — no forced floor. */
 #userTable .admin-table,
 .admin-table {
-  overflow: visible;
-  min-width: 900px;          /* forces scroll on narrow screens, fits wide ones */
+  width: 100%;
+  min-width: 0;        /* kill any inherited min-width that forced overflow */
+  overflow: visible;   /* don't clip the Actions column */
 }
 
-/* Edit/Delete in each row: stack them with proper breathing room and a
-   consistent width, and keep the Actions column from collapsing. */
-.admin-table th:last-child,
-.admin-table td:last-child { min-width: 170px; }
+/* Override the base 180px-per-cell floor that was the real problem.
+   Let columns size to content; only the Actions column gets a floor so
+   its buttons never wrap. */
+#userTable .admin-table th,
+#userTable .admin-table td {
+  min-width: 0;
+  white-space: nowrap;   /* keep cells on one line, columns stay tidy */
+}
+#userTable .admin-table th:last-child,
+#userTable .admin-table td:last-child {
+  min-width: 150px;
+  white-space: normal;
+}
+
+/* Row Edit/Delete: stacked, evenly spaced, consistent width. */
 .action-btns {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.6rem;               /* was 0.5em — a touch more separation */
+  gap: 0.6rem;
   padding: 0.3rem 0;
 }
-.action-btns button {
-  width: 100%;
-  min-width: 110px;
-  margin: 0;
-}
+.action-btns button { width: 100%; min-width: 110px; margin: 0; }
 
-/* Edit-user modal: the Save/Cancel container is `.modal-actions1`, whose
-   only rule was flex-column with a tiny gap — that's why they looked
-   glued together. Give them real vertical separation and padding. */
+/* Edit-user modal Save/Cancel: real separation + taller hit area
+   (container class is .modal-actions1). */
 .modal-actions1 {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;               /* clear space between Save and Cancel */
+  gap: 0.9rem;
   padding: 1.1rem 0 0.4rem;
   margin-top: 0.4rem;
 }
-.modal-actions1 button {
-  width: 100%;
-  margin: 0;
-  padding: 0.75rem 1rem;     /* taller hit area, less cramped */
-}
+.modal-actions1 button { width: 100%; margin: 0; padding: 0.75rem 1rem; }
 
-@media (max-width: 768px) {
-  .admin-container { min-height: auto; padding: 1.2rem; }
-  .admin-table { min-width: 760px; }
+/* Only below this width does the table become genuinely too wide for the
+   screen — then (and only then) allow horizontal scroll of the table. */
+@media (max-width: 720px) {
+  #userTable .admin-table { min-width: 640px; }
 }
