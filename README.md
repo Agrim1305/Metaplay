@@ -1,11 +1,18 @@
 # MetaPlay
 
-A full-stack web application for discovering video games, building personal
-collections, writing reviews, and connecting with other players. Game data is
-pulled live from the [RAWG Video Games Database API](https://rawg.io/apidocs).
+**Live app:** [metaplay-production.up.railway.app](https://metaplay-production.up.railway.app/)
 
-Originally built as a university web & database computing project, then extended
-and hardened for production deployment.
+MetaPlay is a place to keep track of the games you play. You can search a large
+catalogue, save titles to a wishlist, mark what you're currently playing or have
+finished, write reviews, and connect with other players. It started as a
+university web and database project and I kept building on it afterwards, adding
+Google sign-in, an admin area, and a production deployment so anyone can use it.
+
+Game data comes live from the
+[RAWG Video Games Database API](https://rawg.io/apidocs).
+
+> Want to try it without setting anything up? Open the live link above, register
+> an account (or use Google sign-in), and search for a game to get started.
 
 ## Tech Stack
 
