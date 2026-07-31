@@ -1,7 +1,6 @@
 # MetaPlay
 
-**Live app:** [metaplay-production.up.railway.app](https://metaplay-production.up.railway.app/)
-
+**Live app:** [https://metaplay-g2q7.onrender.com/]
 MetaPlay is a place to keep track of the games you play. You can search a large
 catalogue, save titles to a wishlist, mark what you're currently playing or have
 finished, write reviews, and connect with other players. It started as a
