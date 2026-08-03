@@ -1,13 +1,10 @@
-require('dotenv').config();
-const passport = require('passport');
-const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
-const pool = require('./db');
+require("dotenv").config();
+const passport = require("passport");
+const { Strategy: GoogleStrategy } = require("passport-google-oauth20");
+const pool = require("./db");
 
-const {
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  GOOGLE_CALLBACK_URL
-} = process.env;
+const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALLBACK_URL } =
+  process.env;
 
 // Configure Passport's Google OAuth
 passport.use(
@@ -15,33 +12,35 @@ passport.use(
     {
       clientID: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: GOOGLE_CALLBACK_URL
+      callbackURL: GOOGLE_CALLBACK_URL,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
         // Extract the email from Google profile
-        const email = profile.emails
-          && profile.emails[0]
-          && profile.emails[0].value
-          && profile.emails[0].value.toLowerCase();
+        const email =
+          profile.emails &&
+          profile.emails[0] &&
+          profile.emails[0].value &&
+          profile.emails[0].value.toLowerCase();
 
         if (!email) {
           return done(
-            new Error('Google profile did not contain a valid email'),
-            null
+            new Error("Google profile did not contain a valid email"),
+            null,
           );
         }
 
         // Build a base username from displayName or local-part of email
-        const rawDisplayName = profile.displayName || email.split('@')[0];
-        // Replace any sequence of whitespace with a single underscore
-        const displayNameBase = rawDisplayName.trim().replace(/\s+/g, '_');
+        const rawDisplayName = profile.displayName || email.split("@")[0];
+        const displayNameBase = rawDisplayName.trim().replace(/\s+/g, "_");
         let finalUsername = displayNameBase;
 
         // Check if this email already exists in database
-        const [existingRows] = await pool.execute(
-          'SELECT * FROM MPUser WHERE Email = ?',
-          [email]
+        const { rows: existingRows } = await pool.query(
+          `SELECT User_ID AS "User_ID", Username AS "Username",
+                  Email AS "Email", Bio AS "Bio", Role AS "Role"
+           FROM MPUser WHERE Email = $1`,
+          [email],
         );
 
         let userRow;
@@ -54,24 +53,42 @@ passport.use(
 
           for (; attempt < maxAttempts; attempt++) {
             try {
-              const insertSql = 'INSERT INTO MPUser (Username, Email, Password, Bio, Role) VALUES (?, ?, \'\', \'Google User\', \'user\')';
-              const [insertResult] = await pool.execute(insertSql, [finalUsername, email]);
+              const insertSql = `
+                INSERT INTO MPUser (Username, Email, Password, Bio, Role)
+                VALUES ($1, $2, '', 'Google User', 'user')
+                RETURNING User_ID AS "User_ID", Username AS "Username",
+                          Email AS "Email", Bio AS "Bio", Role AS "Role"
+              `;
+              const { rows: insertRows } = await pool.query(insertSql, [
+                finalUsername,
+                email,
+              ]);
 
-              const newId = insertResult.insertId;
-              const [newRows] = await pool.execute('SELECT * FROM MPUser WHERE User_ID = ?', [newId]);
-
-              if (!newRows.length) {
+              if (!insertRows.length) {
                 return done(
-                  new Error('Failed to fetch/create user after Google login'),
-                  null
+                  new Error("Failed to fetch/create user after Google login"),
+                  null,
                 );
               }
 
-              [userRow] = newRows;
+              [userRow] = insertRows;
               break;
             } catch (err) {
+              // Postgres unique_violation (SQLSTATE 23505)
+              // On username collision, append suffix and retry
               if (
-                err.code === 'ER_DUP_ENTRY' && err.message.includes('for key `Username`')
+                err.code === "23505" &&
+                err.constraint &&
+                err.constraint.toLowerCase().includes("username")
+              ) {
+                finalUsername = `${displayNameBase}_${attempt + 1}`;
+                continue;
+              }
+              // Some Postgres builds don't populate .constraint reliably; also match on detail
+              if (
+                err.code === "23505" &&
+                err.detail &&
+                err.detail.toLowerCase().includes("username")
               ) {
                 finalUsername = `${displayNameBase}_${attempt + 1}`;
                 continue;
@@ -84,8 +101,8 @@ passport.use(
       } catch (err) {
         return done(err, null);
       }
-    }
-  )
+    },
+  ),
 );
 
 passport.serializeUser((user, done) => {
@@ -94,9 +111,11 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (userId, done) => {
   try {
-    const [rows] = await pool.execute(
-      'SELECT * FROM MPUser WHERE User_ID = ?',
-      [userId]
+    const { rows } = await pool.query(
+      `SELECT User_ID AS "User_ID", Username AS "Username",
+              Email AS "Email", Bio AS "Bio", Role AS "Role"
+       FROM MPUser WHERE User_ID = $1`,
+      [userId],
     );
     if (!rows.length) {
       return done(null, false);
