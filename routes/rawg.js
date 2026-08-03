@@ -1,8 +1,8 @@
 // Routes for interacting with RAWG.io API
 
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { ensureAuth } = require('../utils/auth');
+const { ensureAuth } = require("../utils/auth");
 
 // Apply ensureAuth to all /rawg routes
 router.use(ensureAuth);
@@ -27,7 +27,7 @@ function getCached(key) {
 function setCached(key, data) {
   cache.set(key, {
     data,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 }
 
@@ -35,7 +35,7 @@ function setCached(key, data) {
 // clean error instead of stalling until Railway's gateway returns a 502.
 // (This is the root cause of the intermittent 502 on the date-range /games
 // query — high latency to RAWG let the request hang with no upper bound.)
-async function fetchWithTimeout(url, ms = 8000) {
+async function fetchWithTimeout(url, ms = 20000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
@@ -46,12 +46,12 @@ async function fetchWithTimeout(url, ms = 8000) {
 }
 
 // Fetch details for a single game by ID
-router.get('/games/:id', async (req, res) => {
+router.get("/games/:id", async (req, res) => {
   const rawId = req.params.id;
   const gameId = parseInt(rawId, 10);
 
   if (isNaN(gameId) || gameId < 1) {
-    return res.status(400).json({ error: 'Invalid game ID' });
+    return res.status(400).json({ error: "Invalid game ID" });
   }
 
   // Check cache first
@@ -68,26 +68,28 @@ router.get('/games/:id', async (req, res) => {
       // Forward RAWG's status code (e.g. 404 or 429)
       return res
         .status(rawgResp.status)
-        .json({ error: 'RAWG fetch failed', status: rawgResp.status });
+        .json({ error: "RAWG fetch failed", status: rawgResp.status });
     }
     const data = await rawgResp.json();
     setCached(`game:${gameId}`, data);
     return res.json(data);
   } catch (err) {
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Batch fetch multiple games by IDs
-router.post('/games/batch', async (req, res) => {
+router.post("/games/batch", async (req, res) => {
   const { ids } = req.body;
 
   if (!Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ error: 'Invalid game IDs' });
+    return res.status(400).json({ error: "Invalid game IDs" });
   }
 
   // Filter out invalid IDs and check cache
-  const validIds = ids.filter((id) => !isNaN(parseInt(id, 10)) && parseInt(id, 10) > 0);
+  const validIds = ids.filter(
+    (id) => !isNaN(parseInt(id, 10)) && parseInt(id, 10) > 0,
+  );
   const results = {};
   const uncachedIds = [];
 
@@ -108,27 +110,34 @@ router.post('/games/batch', async (req, res) => {
 
   // Fetch uncached games in parallel
   try {
-    const fetchPromises = uncachedIds.map((id) => fetchWithTimeout(`https://api.rawg.io/api/games/${id}?key=${RAWG_API_KEY}`)
+    const fetchPromises = uncachedIds.map((id) =>
+      fetchWithTimeout(
+        `https://api.rawg.io/api/games/${id}?key=${RAWG_API_KEY}`,
+      )
         .then((response) => response.json())
         .then((data) => {
           setCached(`game:${id}`, data);
           results[id] = data;
         })
-        .catch(() => null));
+        .catch(() => null),
+    );
 
     await Promise.all(fetchPromises);
     return res.json(results);
   } catch (err) {
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Proxy a search or listing request to RAWG.io, forwarding all query params.
 // Now cached (keyed by the full query) and timeout-bounded — this is the
 // route that was returning 502 on the slow date-range "Trending" query.
-router.get('/games', async (req, res) => {
+router.get("/games", async (req, res) => {
   // Build query with API key and client parameters
-  const params = new URLSearchParams({ key: RAWG_API_KEY, ...req.query }).toString();
+  const params = new URLSearchParams({
+    key: RAWG_API_KEY,
+    ...req.query,
+  }).toString();
   const url = `https://api.rawg.io/api/games?${params}`;
 
   // Cache key = the client query (exclude the API key so it isn't stored).
@@ -143,7 +152,7 @@ router.get('/games', async (req, res) => {
     if (!rawgResp.ok) {
       return res
         .status(rawgResp.status)
-        .json({ error: 'RAWG fetch failed', status: rawgResp.status });
+        .json({ error: "RAWG fetch failed", status: rawgResp.status });
     }
     const data = await rawgResp.json();
     setCached(cacheKey, data);
@@ -151,10 +160,12 @@ router.get('/games', async (req, res) => {
   } catch (err) {
     // AbortError (timeout) or network failure: respond fast and clearly
     // rather than letting the request hang into a gateway 502.
-    const isTimeout = err.name === 'AbortError';
+    const isTimeout = err.name === "AbortError";
     return res
       .status(isTimeout ? 504 : 502)
-      .json({ error: isTimeout ? 'RAWG request timed out' : 'RAWG upstream error' });
+      .json({
+        error: isTimeout ? "RAWG request timed out" : "RAWG upstream error",
+      });
   }
 });
 
