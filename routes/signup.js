@@ -25,8 +25,8 @@ router.post('/', async (req, res) => {
 
   try {
     // Check if username exists
-    const [rowsByUsername] = await pool.execute(
-      'SELECT User_ID FROM MPUser WHERE Username = ?',
+    const { rows: rowsByUsername } = await pool.query(
+      'SELECT User_ID FROM MPUser WHERE Username = $1',
       [username]
     );
     if (rowsByUsername.length > 0) {
@@ -34,8 +34,8 @@ router.post('/', async (req, res) => {
     }
 
     // Check if email exists
-    const [rowsByEmail] = await pool.execute(
-      'SELECT User_ID FROM MPUser WHERE Email = ?',
+    const { rows: rowsByEmail } = await pool.query(
+      'SELECT User_ID FROM MPUser WHERE Email = $1',
       [email]
     );
     if (rowsByEmail.length > 0) {
@@ -48,9 +48,10 @@ router.post('/', async (req, res) => {
 
     const insertSql = `
       INSERT INTO MPUser (Username, Email, Password, Bio, Role)
-      VALUES (?, ?, ?, ?, 'user')
+      VALUES ($1, $2, $3, $4, 'user')
+      RETURNING User_ID
     `;
-    const [result] = await pool.execute(insertSql, [
+    const { rows: insertRows } = await pool.query(insertSql, [
       username,
       email,
       hashedPassword,
@@ -59,11 +60,11 @@ router.post('/', async (req, res) => {
 
     return res.status(201).json({
       message: 'User registered successfully.',
-      userId: result.insertId
+      userId: insertRows[0].user_id
     });
   } catch (err) {
-    // Handle duplicate entry errors
-    if (err.code === 'ER_DUP_ENTRY') {
+    // Postgres unique_violation SQLSTATE = 23505
+    if (err.code === '23505') {
       return res.status(409).json({ error: 'Username or email already exists.' });
     }
     return res.status(500).json({ error: 'Internal server error.' });

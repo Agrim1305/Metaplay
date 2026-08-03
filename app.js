@@ -10,7 +10,7 @@ const pool = require('./db');
 
 const app = express();
 
-// Railway (and most PaaS hosts) sit behind a reverse proxy. Without this,
+// Render (and most PaaS hosts) sit behind a reverse proxy. Without this,
 // Express won't know the original request was HTTPS, and secure cookies break.
 app.set('trust proxy', 1);
 
@@ -66,10 +66,13 @@ app.use(async (req, res, next) => {
 
   try {
     // Single query to get all user data
-    const [[userData]] = await pool.execute(
-      'SELECT User_ID, Username, Email, Bio, Role FROM MPUser WHERE User_ID = ?',
+    const { rows } = await pool.query(
+      `SELECT User_ID AS "User_ID", Username AS "Username", Email AS "Email",
+              Bio AS "Bio", Role AS "Role"
+       FROM MPUser WHERE User_ID = $1`,
       [userId]
     );
+    const userData = rows[0];
 
     if (userData) {
       req.session.userData = userData;

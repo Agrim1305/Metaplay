@@ -1,4 +1,4 @@
-// routes/game_review.js
+// routes/userReview.js
 const express = require('express');
 const pool = require('../db');
 const { getLoggedInUserId, ensureAuth } = require('../utils/auth');
@@ -13,18 +13,18 @@ router.get('/', async (req, res) => {
   try {
     const sql = `
       SELECT
-        gr.Game_ID AS gameId,
-        g.Title AS gameName,
-        gr.Rating AS rating,
-        gr.Review AS review,
-        gr.Created_At AS createdAt,
-        gr.Updated_At AS updatedAt
+        gr.Game_ID AS "gameId",
+        g.Title AS "gameName",
+        gr.Rating AS "rating",
+        gr.Review AS "review",
+        gr.Created_At AS "createdAt",
+        gr.Updated_At AS "updatedAt"
       FROM Game_Reviews gr
       JOIN Games g ON gr.Game_ID = g.Game_ID
-      WHERE gr.User_ID = ?
+      WHERE gr.User_ID = $1
       ORDER BY gr.Created_At DESC
     `;
-    const [rows] = await pool.execute(sql, [userId]);
+    const { rows } = await pool.query(sql, [userId]);
     return res.json(rows);
   } catch (err) {
     return res.status(500).json({ error: 'Failed to fetch user reviews' });
@@ -38,8 +38,8 @@ router.get('/:gameId', async (req, res) => {
   if (Number.isNaN(gameId)) return res.status(400).json({ error: 'Invalid game ID' });
 
   try {
-    const [rows] = await pool.execute(
-      'SELECT Rating AS rating, Review AS review FROM Game_Reviews WHERE User_ID = ? AND Game_ID = ?',
+    const { rows } = await pool.query(
+      'SELECT Rating AS "rating", Review AS "review" FROM Game_Reviews WHERE User_ID = $1 AND Game_ID = $2',
       [userId, gameId]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Review not found' });
@@ -68,23 +68,22 @@ router.post('/', async (req, res) => {
 
   try {
     if (gameName) {
-      await pool.execute(
+      await pool.query(
         `INSERT INTO Games (Game_ID, Title, Release_Date, Rating)
-           VALUES (?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE
-           Title = VALUES(Title),
-           Release_Date = IFNULL(VALUES(Release_Date), Release_Date),
-           Rating = IFNULL(VALUES(Rating), Rating)`,
+           VALUES ($1, $2, $3, $4)
+         ON CONFLICT (Game_ID) DO UPDATE SET
+           Title = EXCLUDED.Title,
+           Release_Date = COALESCE(EXCLUDED.Release_Date, Games.Release_Date),
+           Rating = COALESCE(EXCLUDED.Rating, Games.Rating)`,
         [parsedGameId, gameName, releaseDate || null, metaRating || null]
       );
     }
-    await pool.execute(
+    await pool.query(
       `INSERT INTO Game_Reviews (Game_ID, User_ID, Rating, Review)
-         VALUES (?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         Rating = VALUES(Rating),
-         Review = VALUES(Review),
-         Updated_At = CURRENT_TIMESTAMP`,
+         VALUES ($1, $2, $3, $4)
+       ON CONFLICT (Game_ID, User_ID) DO UPDATE SET
+         Rating = EXCLUDED.Rating,
+         Review = EXCLUDED.Review`,
       [parsedGameId, userId, ratingNum, review || null]
     );
     return res.status(201).json({ message: 'Review saved.' });
@@ -103,13 +102,13 @@ router.put('/:gameId', async (req, res) => {
   if (!ratingNum || ratingNum < 1 || ratingNum > 10) return res.status(400).json({ error: 'Rating must be between 1 and 10' });
 
   try {
-    const [result] = await pool.execute(
+    const result = await pool.query(
       `UPDATE Game_Reviews
-         SET Rating = ?, Review = ?, Updated_At = CURRENT_TIMESTAMP
-       WHERE User_ID = ? AND Game_ID = ?`,
+         SET Rating = $1, Review = $2
+       WHERE User_ID = $3 AND Game_ID = $4`,
       [ratingNum, review || null, userId, gameId]
     );
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Review not found' });
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Review not found' });
     return res.json({ message: 'Review updated.' });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to update review' });
@@ -123,11 +122,11 @@ router.delete('/:gameId', async (req, res) => {
   if (Number.isNaN(gameId)) return res.status(400).json({ error: 'Invalid game ID' });
 
   try {
-    const [result] = await pool.execute(
-      'DELETE FROM Game_Reviews WHERE User_ID = ? AND Game_ID = ?',
+    const result = await pool.query(
+      'DELETE FROM Game_Reviews WHERE User_ID = $1 AND Game_ID = $2',
       [userId, gameId]
     );
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Review not found' });
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Review not found' });
     return res.json({ message: 'Review deleted.' });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to delete review' });

@@ -21,8 +21,10 @@ router.post('/', async (req, res) => {
 
   try {
     // Get user from database
-    const [rows] = await pool.execute(
-      'SELECT User_ID, Username, Password, Role FROM MPUser WHERE Username = ?',
+    const { rows } = await pool.query(
+      `SELECT User_ID AS "User_ID", Username AS "Username",
+              Password AS "Password", Role AS "Role"
+       FROM MPUser WHERE Username = $1`,
       [username]
     );
 

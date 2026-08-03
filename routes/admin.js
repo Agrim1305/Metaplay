@@ -9,14 +9,14 @@ router.use(ensureAuth, ensureAdmin);
 // GET all users
 router.get('/users', async (req, res) => {
   try {
-    const [rows] = await pool.execute(
+    const { rows } = await pool.query(
       `SELECT
          User_ID  AS id,
          Username AS username,
          Email    AS email,
          Bio      AS bio,
          Role     AS role
-       FROM MPUser;`
+       FROM MPUser`
     );
     return res.json(rows);
   } catch (err) {
@@ -28,11 +28,11 @@ router.get('/users', async (req, res) => {
 router.delete('/users/:id', async (req, res) => {
   const userId = req.params.id;
   try {
-    const [result] = await pool.execute(
-      `DELETE FROM MPUser WHERE User_ID = ?`,
+    const result = await pool.query(
+      `DELETE FROM MPUser WHERE User_ID = $1`,
       [userId]
     );
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ error: 'User not found.' });
     }
     return res.json({ success: true });
@@ -41,7 +41,7 @@ router.delete('/users/:id', async (req, res) => {
   }
 });
 
-// UPDATE a user’s details by ID
+// UPDATE a user's details by ID
 router.put('/users/:id', async (req, res) => {
   const userId = req.params.id;
   const {
@@ -50,21 +50,22 @@ router.put('/users/:id', async (req, res) => {
 
   const fields = [];
   const values = [];
+  let idx = 1;
 
-  if (username !== null) {
-    fields.push('Username = ?');
+  if (username !== null && username !== undefined) {
+    fields.push(`Username = $${idx++}`);
     values.push(username.trim());
   }
-  if (email !== null) {
-    fields.push('Email = ?');
+  if (email !== null && email !== undefined) {
+    fields.push(`Email = $${idx++}`);
     values.push(email.trim());
   }
-  if (bio !== null) {
-    fields.push('Bio = ?');
+  if (bio !== null && bio !== undefined) {
+    fields.push(`Bio = $${idx++}`);
     values.push(bio.trim());
   }
-  if (role !== null) {
-    fields.push('Role = ?');
+  if (role !== null && role !== undefined) {
+    fields.push(`Role = $${idx++}`);
     values.push(role.trim());
   }
 
@@ -73,15 +74,15 @@ router.put('/users/:id', async (req, res) => {
   }
 
   try {
+    values.push(userId);
     const sql = `
       UPDATE MPUser
       SET ${fields.join(', ')}
-      WHERE User_ID = ?
+      WHERE User_ID = $${idx}
     `;
-    values.push(userId);
-    const [result] = await pool.execute(sql, values);
+    const result = await pool.query(sql, values);
 
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ error: 'User not found.' });
     }
     return res.json({ success: true });

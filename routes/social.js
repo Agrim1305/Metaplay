@@ -10,24 +10,24 @@ router.use(ensureAuth);
 
 // Check user status and friend request eligibility in a single query
 async function checkUserAndFriendStatus(userId, receiverId) {
-  const [rows] = await pool.execute(
+  const { rows } = await pool.query(
     `SELECT
-      EXISTS(SELECT 1 FROM MPUser WHERE User_ID = ?) as user_exists,
+      EXISTS(SELECT 1 FROM MPUser WHERE User_ID = $1) as user_exists,
       EXISTS(
         SELECT 1 FROM Friends
-        WHERE (User_ID_1 = ? AND User_ID_2 = ?)
-        OR (User_ID_1 = ? AND User_ID_2 = ?)
+        WHERE (User_ID_1 = $2 AND User_ID_2 = $3)
+        OR (User_ID_1 = $4 AND User_ID_2 = $5)
       ) as are_friends,
       EXISTS(
         SELECT 1 FROM FriendRequests
-        WHERE Sender_ID = ? AND Receiver_ID = ? AND Status = 'pending'
+        WHERE Sender_ID = $6 AND Receiver_ID = $7 AND Status = 'pending'
       ) as request_exists`,
     [receiverId, userId, receiverId, receiverId, userId, userId, receiverId]
   );
   return rows[0];
 }
 
-// Search users with optimized query
+// Search users
 router.get('/users/search', async (req, res) => {
   const searchTerm = req.query.q;
   if (!searchTerm) {
@@ -35,10 +35,11 @@ router.get('/users/search', async (req, res) => {
   }
 
   try {
-    const [users] = await pool.execute(
-      `SELECT User_ID, Username, Email, Bio
+    const { rows: users } = await pool.query(
+      `SELECT User_ID AS "User_ID", Username AS "Username",
+              Email AS "Email", Bio AS "Bio"
        FROM MPUser
-       WHERE Username LIKE ? OR Email LIKE ?
+       WHERE Username ILIKE $1 OR Email ILIKE $2
        LIMIT 10`,
       [`%${searchTerm}%`, `%${searchTerm}%`]
     );
@@ -56,12 +57,13 @@ router.get('/friends/requests', async (req, res) => {
   }
 
   try {
-    const [requests] = await pool.execute(
-      `SELECT fr.Request_ID, fr.Sender_ID, fr.Status, fr.Timestamp,
-              u.Username, u.Email, u.Bio
+    const { rows: requests } = await pool.query(
+      `SELECT fr.Request_ID AS "Request_ID", fr.Sender_ID AS "Sender_ID",
+              fr.Status AS "Status", fr.Timestamp AS "Timestamp",
+              u.Username AS "Username", u.Email AS "Email", u.Bio AS "Bio"
        FROM FriendRequests fr
        JOIN MPUser u ON fr.Sender_ID = u.User_ID
-       WHERE fr.Receiver_ID = ? AND fr.Status = 'pending'
+       WHERE fr.Receiver_ID = $1 AND fr.Status = 'pending'
        ORDER BY fr.Timestamp DESC`,
       [userId]
     );
@@ -71,15 +73,16 @@ router.get('/friends/requests', async (req, res) => {
   }
 });
 
-// Get sent friend requests
+// Get sent friend requests — BUG FIX: single quotes instead of double
 router.get('/friends/requests/sent', async (req, res) => {
   const userId = getLoggedInUserId(req);
   if (!userId) {
     return res.status(401).json({ error: 'Not logged in' });
   }
   try {
-    const [requests] = await pool.execute(
-      'SELECT Request_ID, Receiver_ID FROM FriendRequests WHERE Sender_ID = ? AND Status = "pending"',
+    const { rows: requests } = await pool.query(
+      `SELECT Request_ID AS "Request_ID", Receiver_ID AS "Receiver_ID"
+       FROM FriendRequests WHERE Sender_ID = $1 AND Status = 'pending'`,
       [userId]
     );
     return res.json(requests);
@@ -122,8 +125,8 @@ router.post('/friends/request', async (req, res) => {
       return res.status(400).json({ error: 'Friend request already sent' });
     }
 
-    await pool.execute(
-      'INSERT INTO FriendRequests (Sender_ID, Receiver_ID) VALUES (?, ?)',
+    await pool.query(
+      'INSERT INTO FriendRequests (Sender_ID, Receiver_ID) VALUES ($1, $2)',
       [userId, receiverId]
     );
 
@@ -148,8 +151,10 @@ router.post('/friends/request/:requestId', async (req, res) => {
   }
 
   try {
-    const [requests] = await pool.execute(
-      'SELECT * FROM FriendRequests WHERE Request_ID = ? AND Receiver_ID = ?',
+    const { rows: requests } = await pool.query(
+      `SELECT Request_ID AS "Request_ID", Sender_ID AS "Sender_ID",
+              Receiver_ID AS "Receiver_ID", Status AS "Status"
+       FROM FriendRequests WHERE Request_ID = $1 AND Receiver_ID = $2`,
       [requestId, userId]
     );
 
@@ -160,31 +165,32 @@ router.post('/friends/request/:requestId', async (req, res) => {
     const request = requests[0];
 
     if (action === 'accept') {
-      const conn = await pool.getConnection();
-      await conn.beginTransaction();
-
+      // Postgres transaction: use pool.connect() + BEGIN/COMMIT/ROLLBACK
+      const client = await pool.connect();
       try {
-        await conn.execute(
-          'UPDATE FriendRequests SET Status = ? WHERE Request_ID = ?',
+        await client.query('BEGIN');
+
+        await client.query(
+          'UPDATE FriendRequests SET Status = $1 WHERE Request_ID = $2',
           ['accepted', requestId]
         );
 
-        await conn.execute(
-          'INSERT INTO Friends (User_ID_1, User_ID_2) VALUES (?, ?)',
+        await client.query(
+          'INSERT INTO Friends (User_ID_1, User_ID_2) VALUES ($1, $2)',
           [request.Sender_ID, request.Receiver_ID]
         );
 
-        await conn.commit();
+        await client.query('COMMIT');
         return res.json({ message: 'Friend request accepted' });
       } catch (err) {
-        await conn.rollback();
+        await client.query('ROLLBACK');
         throw err;
       } finally {
-        conn.release();
+        client.release();
       }
     } else {
-      await pool.execute(
-        'UPDATE FriendRequests SET Status = ? WHERE Request_ID = ?',
+      await pool.query(
+        'UPDATE FriendRequests SET Status = $1 WHERE Request_ID = $2',
         ['rejected', requestId]
       );
       return res.json({ message: 'Friend request rejected' });
@@ -202,18 +208,18 @@ router.get('/friends', async (req, res) => {
   }
 
   try {
-    const [friends] = await pool.execute(
-      `SELECT u.User_ID, u.Username, u.Email, u.Bio, f.Timestamp_When_Friended
+    const { rows: friends } = await pool.query(
+      `SELECT u.User_ID AS "User_ID", u.Username AS "Username",
+              u.Email AS "Email", u.Bio AS "Bio",
+              f.Timestamp_When_Friended AS "Timestamp_When_Friended"
        FROM Friends f
        JOIN MPUser u ON (
-         CASE
-           WHEN f.User_ID_1 = ? THEN f.User_ID_2 = u.User_ID
-           ELSE f.User_ID_1 = u.User_ID
-         END
+         (f.User_ID_1 = $1 AND f.User_ID_2 = u.User_ID) OR
+         (f.User_ID_2 = $2 AND f.User_ID_1 = u.User_ID)
        )
-       WHERE f.User_ID_1 = ? OR f.User_ID_2 = ?
+       WHERE f.User_ID_1 = $3 OR f.User_ID_2 = $4
        ORDER BY u.Username`,
-      [userId, userId, userId]
+      [userId, userId, userId, userId]
     );
     return res.json(friends);
   } catch (err) {
@@ -231,10 +237,10 @@ router.delete('/friends/:friendId', async (req, res) => {
   }
 
   try {
-    await pool.execute(
+    await pool.query(
       `DELETE FROM Friends
-       WHERE (User_ID_1 = ? AND User_ID_2 = ?)
-       OR (User_ID_1 = ? AND User_ID_2 = ?)`,
+       WHERE (User_ID_1 = $1 AND User_ID_2 = $2)
+       OR (User_ID_1 = $3 AND User_ID_2 = $4)`,
       [userId, friendId, friendId, userId]
     );
     return res.json({ message: 'Friend removed' });
@@ -251,23 +257,24 @@ router.get('/groups/search', async (req, res) => {
   }
 
   try {
-    const [groups] = await pool.execute(
-      `SELECT g.Group_ID, g.Group_Name, g.Bio, g.Group_Type,
-              u.Username as Owner_Name,
-              COUNT(gm.User_ID) as Member_Count
+    const { rows: groups } = await pool.query(
+      `SELECT g.Group_ID AS "Group_ID", g.Group_Name AS "Group_Name",
+              g.Bio AS "Bio", g.Group_Type AS "Group_Type",
+              u.Username AS "Owner_Name",
+              COUNT(gm.User_ID) AS "Member_Count"
        FROM MPGroup g
        LEFT JOIN MPUser u ON g.Owner_ID = u.User_ID
        LEFT JOIN Group_Membership gm ON g.Group_ID = gm.Group_ID
-       WHERE g.Group_Name LIKE ? OR g.Bio LIKE ?
-       GROUP BY g.Group_ID
+       WHERE g.Group_Name ILIKE $1 OR g.Bio ILIKE $2
+       GROUP BY g.Group_ID, u.Username
        LIMIT 10`,
-      [searchTerm, searchTerm]
+      [`%${searchTerm}%`, `%${searchTerm}%`]
     );
     const mappedGroups = groups.map((g) => ({
       id: g.Group_ID,
       name: g.Group_Name,
       description: g.Bio,
-      memberCount: g.Member_Count,
+      memberCount: Number(g.Member_Count),
       owner: g.Owner_Name,
       groupType: g.Group_Type
     }));
@@ -285,16 +292,17 @@ router.get('/groups', async (req, res) => {
   }
 
   try {
-    const [groups] = await pool.execute(
-      `SELECT g.Group_ID, g.Group_Name, g.Bio, g.Group_Type,
-              u.Username as Owner_Name,
-              COUNT(gm2.User_ID) as Member_Count
+    const { rows: groups } = await pool.query(
+      `SELECT g.Group_ID AS "Group_ID", g.Group_Name AS "Group_Name",
+              g.Bio AS "Bio", g.Group_Type AS "Group_Type",
+              u.Username AS "Owner_Name",
+              COUNT(gm2.User_ID) AS "Member_Count"
        FROM Group_Membership gm
        JOIN MPGroup g ON gm.Group_ID = g.Group_ID
        LEFT JOIN MPUser u ON g.Owner_ID = u.User_ID
        LEFT JOIN Group_Membership gm2 ON g.Group_ID = gm2.Group_ID
-       WHERE gm.User_ID = ?
-       GROUP BY g.Group_ID
+       WHERE gm.User_ID = $1
+       GROUP BY g.Group_ID, u.Username
        ORDER BY g.Group_Name`,
       [userId]
     );
@@ -302,7 +310,7 @@ router.get('/groups', async (req, res) => {
       id: g.Group_ID,
       name: g.Group_Name,
       description: g.Bio,
-      memberCount: g.Member_Count,
+      memberCount: Number(g.Member_Count),
       owner: g.Owner_Name,
       groupType: g.Group_Type
     }));
@@ -315,7 +323,6 @@ router.get('/groups', async (req, res) => {
 // Create group
 router.post('/groups', async (req, res) => {
   const userId = getLoggedInUserId(req);
-  // Accept both 'description' and 'bio' for compatibility
   const {
  name, description, bio: bioRaw, groupType
 } = req.body;
@@ -330,23 +337,25 @@ router.post('/groups', async (req, res) => {
   }
 
   try {
-    const conn = await pool.getConnection();
-    await conn.beginTransaction();
-
+    // Postgres transaction
+    const client = await pool.connect();
     try {
-      const [result] = await conn.execute(
-        'INSERT INTO MPGroup (Group_Name, Bio, Group_Type, Owner_ID) VALUES (?, ?, ?, ?)',
+      await client.query('BEGIN');
+
+      const { rows: insertRows } = await client.query(
+        `INSERT INTO MPGroup (Group_Name, Bio, Group_Type, Owner_ID)
+         VALUES ($1, $2, $3, $4) RETURNING Group_ID`,
         [name, bio, groupType || null, userId]
       );
 
-      const groupId = result.insertId;
+      const groupId = insertRows[0].group_id;
 
-      await conn.execute(
-        'INSERT INTO Group_Membership (User_ID, Group_ID) VALUES (?, ?)',
+      await client.query(
+        'INSERT INTO Group_Membership (User_ID, Group_ID) VALUES ($1, $2)',
         [userId, groupId]
       );
 
-      await conn.commit();
+      await client.query('COMMIT');
       return res.status(201).json({
         message: 'Group created',
         groupId,
@@ -355,10 +364,10 @@ router.post('/groups', async (req, res) => {
         groupType
       });
     } catch (err) {
-      await conn.rollback();
+      await client.query('ROLLBACK');
       throw err;
     } finally {
-      conn.release();
+      client.release();
     }
   } catch (err) {
     return res.status(500).json({ error: 'Failed to create group' });
@@ -375,8 +384,8 @@ router.post('/groups/:groupId/join', async (req, res) => {
   }
 
   try {
-    const [groups] = await pool.execute(
-      'SELECT Group_ID FROM MPGroup WHERE Group_ID = ?',
+    const { rows: groups } = await pool.query(
+      'SELECT Group_ID FROM MPGroup WHERE Group_ID = $1',
       [groupId]
     );
 
@@ -384,8 +393,8 @@ router.post('/groups/:groupId/join', async (req, res) => {
       return res.status(404).json({ error: 'Group not found' });
     }
 
-    const [memberships] = await pool.execute(
-      'SELECT 1 FROM Group_Membership WHERE User_ID = ? AND Group_ID = ?',
+    const { rows: memberships } = await pool.query(
+      'SELECT 1 FROM Group_Membership WHERE User_ID = $1 AND Group_ID = $2',
       [userId, groupId]
     );
 
@@ -393,8 +402,8 @@ router.post('/groups/:groupId/join', async (req, res) => {
       return res.status(400).json({ error: 'Already a member of this group' });
     }
 
-    await pool.execute(
-      'INSERT INTO Group_Membership (User_ID, Group_ID) VALUES (?, ?)',
+    await pool.query(
+      'INSERT INTO Group_Membership (User_ID, Group_ID) VALUES ($1, $2)',
       [userId, groupId]
     );
 
@@ -414,8 +423,8 @@ router.delete('/groups/:groupId/leave', async (req, res) => {
   }
 
   try {
-    const [groups] = await pool.execute(
-      'SELECT Owner_ID FROM MPGroup WHERE Group_ID = ?',
+    const { rows: groups } = await pool.query(
+      'SELECT Owner_ID AS "Owner_ID" FROM MPGroup WHERE Group_ID = $1',
       [groupId]
     );
 
@@ -425,13 +434,13 @@ router.delete('/groups/:groupId/leave', async (req, res) => {
 
     if (groups[0].Owner_ID === userId) {
       // Owner is leaving: delete the group and all memberships
-      await pool.execute('DELETE FROM MPGroup WHERE Group_ID = ?', [groupId]);
+      await pool.query('DELETE FROM MPGroup WHERE Group_ID = $1', [groupId]);
       // Group_Membership rows will be deleted via ON DELETE CASCADE
       return res.json({ message: 'Group deleted because owner left' });
     }
 
-    await pool.execute(
-      'DELETE FROM Group_Membership WHERE User_ID = ? AND Group_ID = ?',
+    await pool.query(
+      'DELETE FROM Group_Membership WHERE User_ID = $1 AND Group_ID = $2',
       [userId, groupId]
     );
 

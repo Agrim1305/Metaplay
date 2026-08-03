@@ -15,15 +15,15 @@ router.get('/:gameId', async (req, res) => {
   }
 
   try {
-    const [rows] = await pool.execute(
+    const { rows } = await pool.query(
       `
       SELECT
-        Game_ID AS gameId,
-        Genre AS genre,
-        Player_Count AS playerCount,
-        Developer AS developer
+        Game_ID AS "gameId",
+        Genre AS "genre",
+        Player_Count AS "playerCount",
+        Developer AS "developer"
       FROM Game_Profile
-      WHERE Game_ID = ?
+      WHERE Game_ID = $1
       `,
       [gameId]
     );
@@ -41,7 +41,6 @@ router.get('/:gameId', async (req, res) => {
 // Create or update game profile (admin only)
 router.post(
   '/',
-  // Validate request body
   body('gameId')
     .isInt({ min: 1 })
     .withMessage('gameId must be a positive integer'),
@@ -58,7 +57,6 @@ router.post(
     .isString()
     .withMessage('developer must be a string'),
   async (req, res) => {
-    // Check authentication and admin status
     if (!isLoggedIn(req)) {
       return res.status(401).json({ error: 'Unauthorized: please log in.' });
     }
@@ -66,7 +64,6 @@ router.post(
       return res.status(403).json({ error: 'Forbidden: admins only.' });
     }
 
-    // Validate request body
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -77,21 +74,22 @@ router.post(
 } = req.body;
 
     try {
-      await pool.execute(
+      // Postgres UPSERT via ON CONFLICT
+      await pool.query(
         `
         INSERT INTO Game_Profile
           (Game_ID, Genre, Player_Count, Developer)
-        VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-          Genre = VALUES(Genre),
-          Player_Count = VALUES(Player_Count),
-          Developer = VALUES(Developer)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (Game_ID) DO UPDATE SET
+          Genre = EXCLUDED.Genre,
+          Player_Count = EXCLUDED.Player_Count,
+          Developer = EXCLUDED.Developer
         `,
         [
           gameId,
-          genre !== null && genre.trim() !== '' ? genre.trim() : null,
-          playerCount !== null && playerCount.trim() !== '' ? playerCount.trim() : null,
-          developer !== null && developer.trim() !== '' ? developer.trim() : null
+          genre !== null && genre !== undefined && genre.trim() !== '' ? genre.trim() : null,
+          playerCount !== null && playerCount !== undefined && playerCount.trim() !== '' ? playerCount.trim() : null,
+          developer !== null && developer !== undefined && developer.trim() !== '' ? developer.trim() : null
         ]
       );
 
@@ -104,7 +102,6 @@ router.post(
 
 // Delete game profile (admin only)
 router.delete('/:gameId', async (req, res) => {
-  // Check authentication and admin status
   if (!isLoggedIn(req)) {
     return res.status(401).json({ error: 'Unauthorized: please log in.' });
   }
@@ -118,12 +115,12 @@ router.delete('/:gameId', async (req, res) => {
   }
 
   try {
-    const [result] = await pool.execute(
-      `DELETE FROM Game_Profile WHERE Game_ID = ?`,
+    const result = await pool.query(
+      `DELETE FROM Game_Profile WHERE Game_ID = $1`,
       [gameId]
     );
 
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ error: 'No profile found to delete.' });
     }
 

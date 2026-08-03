@@ -38,18 +38,19 @@ router.put('/', async (req, res) => {
   try {
     const fields = [];
     const values = [];
+    let idx = 1;
 
     // If newUsername is provided, check uniqueness among other users
     if (newUsername) {
       // Make sure no one else (except this user) already has newUsername
-      const [existingRows] = await pool.execute(
-        'SELECT 1 FROM MPUser WHERE Username = ? AND User_ID <> ?',
+      const { rows: existingRows } = await pool.query(
+        'SELECT 1 FROM MPUser WHERE Username = $1 AND User_ID <> $2',
         [newUsername, userId]
       );
       if (existingRows.length > 0) {
         return res.status(409).json({ error: 'Username already taken.' });
       }
-      fields.push('Username = ?');
+      fields.push(`Username = $${idx++}`);
       values.push(newUsername);
     }
 
@@ -57,13 +58,13 @@ router.put('/', async (req, res) => {
     if (newPassword) {
       const saltRounds = 10;
       const hashedPwd = await bcrypt.hash(newPassword, saltRounds);
-      fields.push('Password = ?');
+      fields.push(`Password = $${idx++}`);
       values.push(hashedPwd);
     }
 
     // 3) If newBio is provided (even if empty string), update it
     if (newBio !== null) {
-      fields.push('Bio = ?');
+      fields.push(`Bio = $${idx++}`);
       values.push(newBio);
     }
 
@@ -75,13 +76,13 @@ router.put('/', async (req, res) => {
     // Append userId for the WHERE clause
     values.push(userId);
 
-    // Build the final SQL: UPDATE MPUser SET <field1 = ?>, <field2 = ?>, ... WHERE User_ID = ?
+    // Build the final SQL: UPDATE MPUser SET <field1 = $N>, <field2 = $N+1>, ... WHERE User_ID = $M
     const sql = `
       UPDATE MPUser
          SET ${fields.join(', ')}
-       WHERE User_ID = ?
+       WHERE User_ID = $${idx}
     `;
-    await pool.execute(sql, values);
+    await pool.query(sql, values);
 
     // 4) If username changed, synchronize it back into session and req.user
     if (newUsername) {

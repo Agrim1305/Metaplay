@@ -110,3 +110,8 @@ dist
 # VSCode configs
 .vscode/
 .env
+
+# Migration artifacts (local only)
+code-to-convert.zip
+routes-mysql.zip
+README-MIGRATION.md
