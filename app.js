@@ -119,6 +119,7 @@ const protectedRoutes = {
   '/pages/dashboard.html': 'dashboard.html',
   '/pages/profile.html': 'profile.html',
   '/pages/game.html': 'game.html',
+  '/pages/discover.html': 'discover.html',
   '/pages/admin.html': ['admin.html', ensureAdmin]
 };
 

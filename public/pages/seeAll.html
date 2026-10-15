@@ -1,43 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MetaPlay - Browse Games</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/stylesheets/legacy.css" />
-  <script src="/js/header.js" defer></script>
-  <script src="/js/toast.js" defer></script>
-  <script src="/js/seeAll.js" defer></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discover · MetaPlay</title>
+  <!-- Old "See all" links: map ?category= to a Discover scope. -->
+  <script>
+    (function () {
+      var p = new URLSearchParams(location.search);
+      var scope = { current: 'playing', wishlist: 'wishlist', completed: 'completed', trending: 'trending', comingSoon: 'soon' }[p.get('category')];
+      location.replace('/pages/discover.html' + (scope ? '?scope=' + scope : ''));
+    })();
+  </script>
+  <meta http-equiv="refresh" content="0; url=/pages/discover.html">
 </head>
-
-<body class="app-page">
-  <div class="page-wrapper">
-    <div id="header-include"></div>
-
-    <main class="main-content" role="main">
-      <section class="browse-section seeall-section">
-        <div class="browse-header"
-          >
-          <h2 id="seeAllHeader" class="browse-title" style="margin: 0;">Browse Games</h2>
-          <a href="#" id="backToDashboard" class="btn-back">Dashboard</a>
-        </div>
-        <div id="seeAllSearchBar" class="search-container">
-          <input type="text" id="seeAllSearchInput" class="search-input" placeholder="Search for games..."
-            autocomplete="off" />
-          <button type="button" id="seeAllSearchBtn" class="btn-primary">Search</button>
-        </div>
-        <div id="seeAllGamesGrid" class="browse-grid"></div>
-      </section>
-    </main>
-
-
-    <footer>
-      <div class="container footer-content">© 2025 MetaPlay.</div>
-    </footer>
-  </div>
+<body>
+  <p><a href="/pages/discover.html">Continue to Discover</a></p>
 </body>
-
 </html>
