@@ -34,13 +34,13 @@ export function gameCard(game, { reviews, year = false } = {}) {
       <div class="cov" style="${covStyle(game.id)}">
         ${coverImg(game.background_image, 640)}
         ${metaBadge(game.metacritic)}
-        <div class="qa">
-          ${QA.map(([key, ic, cls]) => html`<button type="button" data-status="${key}" aria-pressed="false" aria-label="Add ${game.name} to ${STATUS[key].label}">${icon(ic, { cls })}</button>`)}
-        </div>
       </div>
       <div>
         <a class="card-title" href="${gameHref(game.id)}">${game.name}</a>
         <div class="card-meta"><span>${sub}</span><span class="mine-slot"></span></div>
+      </div>
+      <div class="qa">
+        ${QA.map(([key, ic, cls]) => html`<button type="button" data-status="${key}" aria-pressed="false" aria-label="Add ${game.name} to ${STATUS[key].label}">${icon(ic, { cls })}</button>`)}
       </div>
     </article>`);
 

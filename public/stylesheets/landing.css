@@ -55,7 +55,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .l-light:hover { color: var(--bg); background: #fff; }
 
 /* Hero */
-.l-main { max-width: 1280px; margin: 0 auto; padding: 24px var(--gutter) 0; display: flex; flex-wrap: wrap; gap: 48px; align-items: center; }
+.l-main { max-width: 1280px; margin: 0 auto; padding: 24px var(--gutter) 0; overflow-x: clip; display: flex; flex-wrap: wrap; gap: 48px; align-items: center; }
 .l-pitch { flex: 1 1 460px; min-width: 0; padding: 40px 0; }
 .l-chip {
   display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border: 1px solid var(--line); border-radius: 999px;
