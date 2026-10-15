@@ -4,9 +4,6 @@ const express = require("express");
 const router = express.Router();
 const { ensureAuth } = require("../utils/auth");
 
-// Apply ensureAuth to all /rawg routes
-router.use(ensureAuth);
-
 // Get API key from environment
 const { RAWG_API_KEY } = process.env;
 
@@ -45,6 +42,75 @@ async function fetchWithTimeout(url, ms = 20000) {
   }
 }
 
+// RAWG list responses carry `next`/`previous` URLs that embed our API key.
+// Strip it before anything reaches the browser.
+function stripKey(data) {
+  for (const k of ["next", "previous"]) {
+    if (typeof data[k] === "string") {
+      const u = new URL(data[k]);
+      u.searchParams.delete("key");
+      data[k] = u.search;
+    }
+  }
+  return data;
+}
+
+// Public (no login): cover art for the landing page's cover wall.
+// Returns only names and images so it can't be used as an open RAWG proxy.
+router.get("/public/trending", async (req, res) => {
+  const cached = getCached("public:trending");
+  if (cached) return res.json(cached);
+  const params = new URLSearchParams({
+    key: RAWG_API_KEY,
+    ordering: "-added",
+    page_size: "24",
+    dates: `${new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10)},${new Date().toISOString().slice(0, 10)}`,
+  });
+  try {
+    const rawgResp = await fetchWithTimeout(`https://api.rawg.io/api/games?${params}`);
+    if (!rawgResp.ok) return res.status(rawgResp.status).json({ error: "RAWG fetch failed" });
+    const data = await rawgResp.json();
+    const games = (data.results || [])
+      .filter((g) => g.background_image)
+      .map((g) => ({ id: g.id, name: g.name, background_image: g.background_image }));
+    setCached("public:trending", games);
+    return res.json(games);
+  } catch (err) {
+    return res.status(err.name === "AbortError" ? 504 : 502).json({ error: "RAWG upstream error" });
+  }
+});
+
+// Everything below needs a logged-in user.
+router.use(ensureAuth);
+
+// Screenshots for a game (same cache + timeout pattern as the others)
+router.get("/games/:id/screenshots", async (req, res) => {
+  const gameId = parseInt(req.params.id, 10);
+  if (isNaN(gameId) || gameId < 1) {
+    return res.status(400).json({ error: "Invalid game ID" });
+  }
+  const cached = getCached(`shots:${gameId}`);
+  if (cached) return res.json(cached);
+  try {
+    const rawgResp = await fetchWithTimeout(
+      `https://api.rawg.io/api/games/${gameId}/screenshots?key=${RAWG_API_KEY}`,
+    );
+    if (!rawgResp.ok) {
+      return res
+        .status(rawgResp.status)
+        .json({ error: "RAWG fetch failed", status: rawgResp.status });
+    }
+    const data = stripKey(await rawgResp.json());
+    setCached(`shots:${gameId}`, data);
+    return res.json(data);
+  } catch (err) {
+    const isTimeout = err.name === "AbortError";
+    return res
+      .status(isTimeout ? 504 : 502)
+      .json({ error: isTimeout ? "RAWG request timed out" : "RAWG upstream error" });
+  }
+});
+
 // Fetch details for a single game by ID
 router.get("/games/:id", async (req, res) => {
   const rawId = req.params.id;
@@ -74,7 +140,10 @@ router.get("/games/:id", async (req, res) => {
     setCached(`game:${gameId}`, data);
     return res.json(data);
   } catch (err) {
-    return res.status(500).json({ error: "Internal server error" });
+    const isTimeout = err.name === "AbortError";
+    return res
+      .status(isTimeout ? 504 : 502)
+      .json({ error: isTimeout ? "RAWG request timed out" : "RAWG upstream error" });
   }
 });
 
@@ -114,8 +183,9 @@ router.post("/games/batch", async (req, res) => {
       fetchWithTimeout(
         `https://api.rawg.io/api/games/${id}?key=${RAWG_API_KEY}`,
       )
-        .then((response) => response.json())
+        .then((response) => (response.ok ? response.json() : null))
         .then((data) => {
+          if (!data || !data.id) return; // 404/429/etc: leave it out, never cache errors
           setCached(`game:${id}`, data);
           results[id] = data;
         })
@@ -154,7 +224,7 @@ router.get("/games", async (req, res) => {
         .status(rawgResp.status)
         .json({ error: "RAWG fetch failed", status: rawgResp.status });
     }
-    const data = await rawgResp.json();
+    const data = stripKey(await rawgResp.json());
     setCached(cacheKey, data);
     return res.json(data);
   } catch (err) {

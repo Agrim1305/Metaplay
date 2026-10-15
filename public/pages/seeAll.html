@@ -7,8 +7,7 @@
   <title>MetaPlay - Browse Games</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/stylesheets/style.css" />
-  <link rel="stylesheet" href="/stylesheets/style-overrides.css" />
+  <link rel="stylesheet" href="/stylesheets/legacy.css" />
   <script src="/js/header.js" defer></script>
   <script src="/js/toast.js" defer></script>
   <script src="/js/seeAll.js" defer></script>
@@ -34,44 +33,11 @@
       </section>
     </main>
 
-    <div id="gameModal" class="modal-overlay hidden" aria-hidden="true" tabindex="-1">
-      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <button type="button" class="modal-close-btn" aria-label="Close details modal">&times;</button>
-        <img id="modalCover" class="modal-cover" src="/images/fallback_cover.png" alt="Game Cover" />
-
-        <div class="section modal-body" style="border-radius: 0px;">
-          <h2 id="modalTitle">Game Title</h2>
-          <p class="modal-meta"><span id="modalRelease">Released: N/A</span></p>
-          <p id="modalDesc"></p>
-
-          <div id="modalReviewSection" style="display:none;">
-            <label for="modalReviewTextarea">Your review:</label>
-            <textarea id="modalReviewTextarea" placeholder="Write your review…" rows="3"></textarea>
-            <div id="modalRating" class="star-container" style="margin-bottom: 10px;"></div>
-            <div id="modalStarRating" class="star-container"></div>
-            <button type="button" id="modalSaveReview" class="action-btn">Save</button>
-          </div>
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" id="addToWishlist" class="action-btn">Wishlist</button>
-          <button type="button" id="addToCurrent" class="action-btn">Playing</button>
-          <button type="button" id="addToCompleted" class="action-btn">Completed</button>
-        </div>
-      </div>
-    </div>
 
     <footer>
       <div class="container footer-content">© 2025 MetaPlay.</div>
     </footer>
   </div>
-
-  <script>
-    // Modal action buttons are always visible — pinned at the bottom of the
-    // modal by the three-zone CSS layout (fixed cover, scrolling body, fixed actions).
-    // The old scroll-reveal logic was removed because it hid the buttons until the
-    // user scrolled to the very bottom, which often wasn't reachable.
-  </script>
 </body>
 
 </html>

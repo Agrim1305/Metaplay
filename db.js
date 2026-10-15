@@ -1,6 +1,10 @@
 require('dotenv').config();
 
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
+
+// TIMESTAMP columns hold UTC wall-clock time (the DB runs in GMT). Read them as
+// UTC so "edited 2 days ago" is right on any machine, not just a UTC server.
+types.setTypeParser(1114, (s) => new Date(`${s.replace(' ', 'T')}Z`));
 
 const {
   PGHOST,

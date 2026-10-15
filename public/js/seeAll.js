@@ -6,9 +6,6 @@
     completed: 'played'
   };
 
-  let activeGameId = null;
-  let modalGameData = null;
-
   // Generic fetch → JSON helper
   async function fetchJSON(url, options = {}) {
     const res = await fetch(url, { credentials: 'same-origin', ...options });
@@ -42,96 +39,6 @@
     gridContainer.appendChild(p);
   }
 
-  // Generates 5 stars; if editable, calls onRate(newRating) on click
-  function createStarRating(ratingValue = 0, editable = false, onRate = null) {
-    const container = document.createElement('div');
-    container.className = 'star-container';
-    const current = Math.round(ratingValue);
-
-    for (let i = 1; i <= 5; i += 1) {
-      const star = document.createElement('span');
-      star.textContent = i <= current ? '★' : '☆';
-      star.className = i <= current ? 'star-full' : 'star-empty';
-
-      if (editable && typeof onRate === 'function') {
-        star.style.cursor = 'pointer';
-        star.addEventListener('click', () => onRate(i));
-      }
-      container.appendChild(star);
-    }
-    return container;
-  }
-
-  // Renders the textarea + interactive stars + Save button
-  function renderReviewSection({ review = '', rating = 0 }) {
-    const section = document.getElementById('modalReviewSection');
-    section.innerHTML = '';
-
-    // Label + textarea
-    const label = document.createElement('label');
-    label.textContent = 'Your Review:';
-    section.appendChild(label);
-
-    const textarea = document.createElement('textarea');
-    textarea.placeholder = 'Write your review…';
-    textarea.value = review;
-    section.appendChild(textarea);
-
-    // Star handler
-    let currentRating = rating;
-    function onRate(newRating) {
-      currentRating = newRating;
-      const newStars = createStarRating(currentRating, true, onRate);
-      section.replaceChild(
-        newStars,
-        section.querySelector('.star-container')
-      );
-    }
-    section.appendChild(createStarRating(currentRating, true, onRate));
-
-    // Save button
-    const saveBtn = document.createElement('button');
-    saveBtn.textContent = 'Save';
-    saveBtn.className = 'action-btn';
-    saveBtn.style.marginTop = '1rem';
-    section.appendChild(saveBtn);
-
-    saveBtn.addEventListener('click', async () => {
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving…';
-      try {
-        await fetchJSON('/user-review', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            gameId: activeGameId,
-            review: textarea.value.trim() || null,
-            rating: currentRating || null,
-            gameName: modalGameData.name,
-            releaseDate: modalGameData.released,
-            metaRating: modalGameData.rating
-          })
-        });
-        showToast('Review saved.');
-      } catch (err) {
-        showToast('Failed to save review.');
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save';
-      }
-    });
-  }
-
-  // Try GET /user-review/:gameId; fall back to empty if error
-  async function loadUserReview(gameId) {
-    try {
-      const data = await fetchJSON(`/user-review/${gameId}`);
-      renderReviewSection(data);
-    } catch (err) {
-      renderReviewSection({ review: '', rating: 0 });
-    }
-  }
-
   // Remove from user list (collection/wishlist/played)
   async function removeGameFromUserList(gameId, listKey, cardEl) {
     try {
@@ -147,85 +54,6 @@
       }
     } catch (err) {
       showToast('Failed to remove game.');
-    }
-  }
-
-  // Close modal
-  function closeModal() {
-    const modal = document.getElementById('gameModal');
-    modal.classList.add('hidden');
-    modal.setAttribute('aria-hidden', 'true');
-    activeGameId = null;
-    modalGameData = null;
-  }
-
-  // Add to wishlist/current/completed
-  async function addToList(listKey) {
-    try {
-      await fetchJSON('/user-games', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gameId: activeGameId,
-          rating: null,
-          review: null,
-          status: STATUS_MAP[listKey]
-        })
-      });
-      showToast(`Game added to ${listKey}.`);
-    } catch (err) {
-      showToast(`Failed to add to ${listKey}.`);
-    } finally {
-      closeModal();
-    }
-  }
-
-  // Open modal, fetch game details, show reviewSection if released
-  async function openGameModal(gameId) {
-    activeGameId = gameId;
-    const modal = document.getElementById('gameModal');
-    const title = document.getElementById('modalTitle');
-    const cover = document.getElementById('modalCover');
-    const desc = document.getElementById('modalDesc');
-    const rel = document.getElementById('modalRelease');
-    const reviewSec = document.getElementById('modalReviewSection');
-    const wishBtn = document.getElementById('addToWishlist');
-    const currBtn = document.getElementById('addToCurrent');
-    const compBtn = document.getElementById('addToCompleted');
-
-    try {
-      const game = await fetchJSON(
-        `/rawg/games/${encodeURIComponent(gameId)}`
-      );
-      modalGameData = game;
-
-      title.textContent = game.name || 'Unknown Title';
-      cover.src = game.background_image || '/images/fallback_cover.png';
-      cover.alt = game.name || 'Game Cover';
-      desc.textContent = game.description_raw || 'No description available.';
-
-      const releasedDate = game.released ? new Date(game.released) : null;
-      const now = new Date();
-      const upcoming = releasedDate && releasedDate > now;
-      rel.textContent = upcoming
-        ? `Releasing: ${game.released}`
-        : `Released: ${game.released || 'N/A'}`;
-
-      wishBtn.style.display = '';
-      currBtn.style.display = upcoming ? 'none' : '';
-      compBtn.style.display = upcoming ? 'none' : '';
-
-      if (upcoming) {
-        reviewSec.style.display = 'none';
-      } else {
-        reviewSec.style.display = '';
-        await loadUserReview(gameId);
-      }
-
-      modal.classList.remove('hidden');
-      modal.setAttribute('aria-hidden', 'false');
-    } catch (err) {
-      showToast('Could not load game details.');
     }
   }
 
@@ -263,7 +91,7 @@
       card.appendChild(btn);
     }
 
-    card.addEventListener('click', () => openGameModal(game.id));
+    card.addEventListener('click', () => { window.location.href = `/pages/game.html?id=${game.id}`; });
     return card;
   }
 
@@ -325,27 +153,6 @@
     fetchJSON('/get-user').catch(() => {
       window.location.replace('/pages/login.html');
     });
-
-    // Modal controls
-    const modalEl = document.getElementById('gameModal');
-    modalEl.querySelector('.modal-close-btn')
-      .addEventListener('click', closeModal);
-    modalEl.addEventListener('click', (evt) => {
-      if (evt.target === modalEl) {
-        closeModal();
-      }
-    });
-    document.addEventListener('keydown', (evt) => {
-      if (evt.key === 'Escape' && !modalEl.classList.contains('hidden')) {
-        closeModal();
-      }
-    });
-    document.getElementById('addToWishlist')
-      .addEventListener('click', () => addToList('wishlist'));
-    document.getElementById('addToCurrent')
-      .addEventListener('click', () => addToList('current'));
-    document.getElementById('addToCompleted')
-      .addEventListener('click', () => addToList('completed'));
 
     // Search logic
     async function doSearch(query) {

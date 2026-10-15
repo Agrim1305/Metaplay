@@ -1,0 +1,1256 @@
+/* ================================================================
+   MetaPlay — consolidated stylesheet (single source of truth)
+   ----------------------------------------------------------------
+   This file REPLACES the old style.css + style-overrides.css pair.
+   Every selector is defined ONCE. The override file's intent (the
+   floating frosted nav capsule + the breathable layout work from
+   two days ago) is folded directly into the base rules below, so
+   nothing is fighting the cascade anymore — your edits will take.
+
+   The "breathable" knobs live in :root. Change a value there and it
+   propagates everywhere consistently. No second file, no hunting,
+   no lost edits.
+   ================================================================ */
+
+:root {
+  /* ---- Layout width / breathing room ---- */
+  --page-max: 1480px;        /* main content + container ceiling (was 1100) */
+  --content-pad: 40px;       /* horizontal page padding on desktop */
+  --profile-max: 1000px;     /* profile card width (was a tight 600) */
+  --seeall-max: 1000px;      /* identical to profile — guarantees same alignment */
+  --social-max: 1000px;      /* identical to profile — guarantees same alignment */
+  --modal-max: 640px;
+
+  /* ---- Grid / cards ---- */
+  --card-min: 210px;         /* dashboard card min column width */
+  --browse-card-min: 300px;  /* see-all results — 3 per row at framed width */
+  --grid-gap: 1.4rem;
+  --thumb-h: 200px;          /* game cover height on desktop */
+
+  /* ---- Header capsule rhythm ---- */
+  --header-top: 16px;        /* how far the capsule floats from the top */
+  --header-clear: 100px;     /* page padding-top so content clears it */
+  --card-gap-top: 2rem;      /* uniform distance from nav to the first card, all pages */
+  --modal-clear: 40px;       /* modal sits closer to the top / nav */
+
+  /* ---- Radii ---- */
+  --radius-section: 18px;
+  --radius-card: 14px;
+  --radius-wrapper: 20px;
+
+  /* ---- Palette (MetaPlay identity — unchanged) ---- */
+  --accent: #e94560;
+  --accent-hover: #bf3858;
+  --bg-body: #1c1c1c;
+  --bg-wrapper: rgba(35, 35, 43, 0.98);
+  --bg-section: rgba(30, 30, 38, 0.96);
+  --bg-card: #23232b;
+  --bg-modal: #191923;
+  --border-subtle: #2c2c38;
+  --border-card: #343347;
+  --text-main: #f3e5ea;
+  --text-muted: #b9aab0;
+  --text-soft: #cabbc1;
+}
+
+/* === Base === */
+html, body {
+  overflow-x: hidden;          /* no element should cause horizontal scroll */
+  max-width: 100%;
+}
+body {
+  background: var(--bg-body);
+  color: var(--text-main);
+  font-family: 'Inter', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: none;
+}
+
+/* Wider, more breathable page (folded from override §1 + §18) */
+.container {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 var(--content-pad);
+}
+
+/* ================================================================
+   HEADER — detached frosted capsule (override §17, kept verbatim)
+   The original full-width welded bar is gone; this floats a rounded
+   frosted pill centered over the content, portfolio-style.
+   ================================================================ */
+header {
+  width: 100%;
+  height: auto;
+  background: transparent;       /* the capsule carries the bg */
+  box-shadow: none;
+  backdrop-filter: none;
+  position: fixed;
+  top: var(--header-top);
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  padding: 0 32px;               /* keeps the capsule off both edges */
+  pointer-events: none;          /* clicks pass through except the capsule */
+  box-sizing: border-box;
+}
+header .header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: auto;
+  max-width: 1020px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0.35rem 1.6rem;
+  background: rgba(22, 22, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-sizing: border-box;
+}
+header h1 {
+  margin: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+header h1 a {
+  font-size: 1.25rem;
+  line-height: 3.5rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+nav {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+nav a {
+  position: relative;
+  color: var(--accent);
+  font-size: 1.25rem;
+  line-height: 3.5rem;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 6px;
+  padding-bottom: 2px;
+  transition: background 0.18s, color 0.18s;
+}
+nav a:hover, nav a:focus, header h1 a:hover, header h1 a:focus {
+  color: #fff;
+}
+/* Nav underline micro-interaction (override §11) */
+nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s ease;
+}
+nav a:hover::after {
+  transform: scaleX(1);
+}
+
+/* Footer */
+footer {
+  width: 100%;
+  height: 48px;
+  background: rgba(17, 17, 17, 0.98);
+  display: flex;
+  align-items: center;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.5);
+  margin-top: auto;
+  border-radius: 16px;
+}
+
+/* Main Content — clears the floating capsule (override §1, §17, §18) */
+main.main-content {
+  padding-top: var(--header-clear);
+  padding-bottom: 88px;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;              /* full viewport width — sections limit their own width */
+  display: flex;
+  flex-direction: column;
+  align-items: center;          /* centers the self-limited sections in the viewport */
+}
+/* Index Page */
+main.main-content1 {
+  padding-top: var(--header-clear);
+  padding-bottom: 60px;
+  margin: 0 auto;
+  max-width: var(--page-max);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Welcome banner — give it room (override §2) */
+.welcome-message {
+  width: 100%;
+  margin-bottom: 2.5rem;
+}
+.welcome-message h2 {
+  font-size: 2.4rem;
+  margin-bottom: 0.4rem;
+}
+.welcome-message p {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+/* Section Titles */
+section h2, section h3, .browse-title {
+  color: #fff;
+  font-weight: 800;
+  margin-bottom: 1.1rem;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 8px #19192344;
+}
+.browse-title {
+  font-size: 2rem;
+  color: var(--accent);
+  margin-bottom: 0.7rem;
+}
+
+/* ================================================================
+   Cards & Wrappers — breathable by DEFAULT now.
+   The old shared rule capped all of these at 480px, which is why
+   pages felt suffocating and the override had to fight it per-page.
+   Default is now fluid; only genuine exceptions narrow themselves.
+   ================================================================ */
+.card-wrapper, .auth-card, .login-card, .signup-card, .reset-card,
+.search-card, #searchPageCard, .admin-card, .profile-section,
+.browse-section, .seeall-section, .social-section {
+  background: var(--bg-wrapper);
+  border-radius: var(--radius-wrapper);
+  box-shadow: 0 6px 32px rgba(0,0,0,0.22), 0 1.5px 6px #e9456022;
+  padding: 2.5rem 2.2rem;
+  width: 100%;
+  max-width: var(--page-max);   /* was 480px — the source of the squeeze */
+  margin-left: auto;
+  margin-right: auto;
+  border: 1.5px solid #23232b;
+  transition: box-shadow 0.18s, border 0.18s;
+}
+/* Auth/login forms genuinely want to stay narrow — opt them back in */
+.auth-card, .login-card, .signup-card, .reset-card,
+.search-card, #searchPageCard {
+  max-width: 480px;
+}
+
+.dashboard-row {
+  display: flex;
+  flex-direction: row;
+  gap: 2.5rem;                  /* override §3 */
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.dashboard-row > .dashboard-row {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+/* Sections — grow with content, no more fixed-height inner scroll
+   (override §4 + §18 padding) */
+.section {
+  flex: 1 1 360px;
+  width: 100%;
+  min-width: 320px;
+  max-width: none;
+  background: var(--bg-section);
+  border-radius: var(--radius-section);
+  box-shadow: 0 2px 12px #e9456022;
+  padding: 1.8rem 2rem 2.2rem;
+  margin-bottom: 1.2rem;
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;         /* was center — let the grid fill width */
+  max-height: none;             /* was 540px + overflow scroll */
+  overflow: visible;
+  box-sizing: border-box;
+}
+.section h3 {
+  font-size: 1.5rem;
+  align-self: flex-start;
+  margin-bottom: 1.3rem;
+}
+/* "See All" button — align left, not full-width (override §7) */
+.section > .action-btn {
+  align-self: flex-start;
+  max-width: 160px;
+  margin-top: 1.6rem;
+}
+
+/* Grid — auto-fitting, breathable columns (override §5) */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+  gap: var(--grid-gap);
+  width: 100%;
+}
+
+/* ================================================================
+   Game Card — taller, proportioned, animated (override §6 + §12)
+   ================================================================ */
+.game-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.17);
+  margin: 0 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  cursor: pointer;
+  border: 1px solid var(--border-card);
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  max-height: none;             /* the 180px cap cropped everything */
+  transition: box-shadow 0.2s, background 0.2s, transform 0.15s;
+  animation: card-in 0.32s ease both;
+}
+.game-card:hover {
+  box-shadow: 0 12px 30px rgba(233, 69, 96, 0.28);
+  background: #28283a;
+  transform: translateY(-5px) scale(1.02);
+  border-color: var(--accent);
+}
+.game-card:empty, .game-card:has(img[alt="Game Cover"][src=""]) {
+  display: none !important;
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.game-thumb {
+  width: 100%;
+  height: var(--thumb-h);
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+}
+.game-card:hover .game-thumb {
+  transform: scale(1.05);
+}
+.game-title-overlay {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(20,20,26,0.95) 0%, rgba(20,20,26,0.55) 70%, transparent 100%);
+  font-size: 1.02rem;
+  font-weight: 700;
+  padding: 0.7em 0.85em;
+  text-shadow: 0 2px 8px #19192388;
+  pointer-events: none;
+}
+
+/* Remove button on owned cards — reveal on hover (override §10) */
+.game-card > button:not(.modal-close-btn) {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  font-size: 1.1rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.game-card:hover > button:not(.modal-close-btn) {
+  opacity: 1;
+}
+
+/* ================================================================
+   Profile Section (override §18 width)
+   ================================================================ */
+.profile-section {
+  max-width: var(--profile-max);
+  margin: var(--card-gap-top) auto 1.5rem auto;
+  padding: 2.5rem 2.2rem 1.5rem 2.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: var(--bg-wrapper);
+}
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.2rem;
+  width: 100%;
+}
+.profile-info { flex: 1; }
+.profile-info h2 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #fff;
+}
+.profile-details div {
+  color: #e9d7dd;
+  font-size: 1.1rem;
+  margin-bottom: 0.6rem;
+}
+.profile-actions {
+  text-align: right;
+  margin-top: 1.5rem;
+}
+.edit-profile-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 0.6em 1.2em;
+  cursor: pointer;
+  transition: background 0.16s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.edit-profile-btn:hover, .edit-profile-btn:focus {
+  background: var(--accent-hover);
+}
+
+/* === Buttons === */
+.btn-primary, .btn-primary:visited, a.btn-primary, button.btn-primary,
+input.btn-primary, .action-btn, .edit-profile-btn, .btn-back {
+  background: var(--accent);
+  color: #fff !important;
+  border: none;
+  width: 100%;
+  max-width: 150px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border-radius: 8px;
+  margin: 0.6rem auto 0.6rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 0.4em 0.6em;
+  transition: background 0.16s, box-shadow 0.16s, transform 0.12s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  margin-top: 1.2rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn-primary1, .btn-primary1:visited, a.btn-primary1, button.btn-primary1,
+input.btn-primary1, .action-btn1, .register-button, .edit-profile-btn1, .btn-back1 {
+  background: var(--accent);
+  color: #fff !important;
+  border: none;
+  width: 100%;
+  max-width: 350px;
+  min-height: 48px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border-radius: 8px;
+  margin: 0.6rem auto 0.6rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 0.7em 1.5em;
+  transition: background 0.16s, box-shadow 0.16s, transform 0.12s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  margin-top: 1.2rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn-primary:hover, .btn-primary1:hover, .action-btn:hover,
+.register-button:hover, .edit-profile-btn:hover, .btn-back:hover {
+  background: rgb(228, 116, 142);
+}
+.btn-secondary {
+  background: var(--border-card);
+  color: #fff !important;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.16s, box-shadow 0.16s, transform 0.12s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  display: inline-block;
+  text-align: center;
+  text-decoration: none !important;
+  padding: 0.2em 0.6em;
+  margin: 0.4em 0.4em 0.4em 0.4em;
+}
+.btn-secondary:hover, .btn-secondary:focus {
+  background: #535380;
+}
+.btn-google-dark {
+  background: #fff;
+  color: #191923 !important;
+  border: 2px solid var(--accent);
+  gap: 0.7rem;
+  cursor: pointer;
+  transition: background 0.18s, border 0.16s, color 0.18s;
+  outline: none;
+  text-decoration: none !important;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0.7em 1.5em;
+  width: 100%;
+  max-width: 300px;
+  margin: 0.6rem auto;
+}
+.btn-google-dark:hover, .btn-google-dark:focus {
+  background: #ffe4ec;
+  border-color: var(--accent-hover);
+  color: var(--accent) !important;
+}
+.google-icon {
+  width: 26px;
+  height: 26px;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+.google-text {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: inherit;
+  display: inline-block;
+}
+
+/* === Inputs & Forms === */
+input, textarea, select {
+  background: #232323;
+  border: 1.5px solid #343434;
+  color: #fff;
+  border-radius: 7px;
+  font-size: 1.1rem;
+  padding: 0.7rem 1.3rem;
+  margin-bottom: 1.2rem;
+  width: 100%;
+  transition: border-color 0.14s, box-shadow 0.14s;
+  box-shadow: 0 1.5px 6px #e9456011;
+  box-sizing: border-box;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px #e9456044;
+}
+label {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #e9d7dd;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+input[type="checkbox"], input[type="radio"] {
+  width: auto;
+  margin-right: 0.6rem;
+  accent-color: var(--accent);
+}
+.form-error, .input-error {
+  color: #ff4e80;
+  font-size: 1rem;
+  margin-top: -1rem;
+  margin-bottom: 1.2rem;
+  font-weight: 600;
+}
+.separator {
+  text-align: center;
+  color: #ccc;
+  font-weight: 600;
+  margin: 0.6rem 0;
+  letter-spacing: 1px;
+}
+.alt-action {
+  margin-top: 0.9rem;
+  font-size: 1.04rem;
+  color: #e0cbe4;
+  text-align: center;
+}
+.alt-action a, .link-secondary {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-size: 1.07rem;
+  transition: color 0.16s, text-decoration 0.15s;
+  padding: 0;
+  margin: 0;
+  display: inline-block;
+}
+
+/* === Tables === */
+.table, table, .admin-table {
+  width: 100%;
+  border-collapse: separate;
+  background: #222227;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  vertical-align: middle;
+}
+.table thead th, table thead th, .admin-table th {
+  background: #232323;
+  color: var(--accent);
+  padding: 1em;
+  border-bottom: 2px solid #2b2b2b;
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar {
+  width: 11px;
+  background: rgba(28,28,34,0.98);
+  border-radius: 0px 10px 10px 0px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-card);
+  border-radius: 6px;
+  border: 2px solid rgba(28,28,34,0.98);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* === Toast & Notifications === */
+.toast, .notification {
+  position: fixed;
+  bottom: 36px;
+  right: 36px;
+  background: #222227;
+  color: #fff;
+  border-left: 5px solid var(--accent);
+  padding: 1.1rem 1.7rem 1.1rem 1.2rem;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+  font-size: 1rem;
+  z-index: 3000;
+  animation: fadeIn 0.45s;
+}
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ================================================================
+   Modal — clears the floating capsule, caps to viewport,
+   action buttons always visible (override §8 + §9)
+   ================================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(30, 30, 36, 0.85);
+  z-index: 1500;
+  display: none;
+  align-items: flex-start;       /* anchor near the top, close to the nav */
+  justify-content: center;
+  padding: var(--modal-clear) 1rem 24px;
+  overflow-y: auto;
+  transition: background 0.2s;
+}
+.modal-overlay:not(.hidden) {
+  display: flex;
+}
+.modal-content {
+  background: var(--bg-modal);
+  color: #fff;
+  border-radius: var(--radius-section);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.30);
+  width: min(94vw, var(--modal-max));
+  max-height: calc(100vh - 130px);       /* never taller than the padded overlay area */
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;                      /* the WHOLE modal scrolls — image scrolls away too */
+  overflow-x: hidden;
+  border-radius: var(--radius-section);
+  position: relative;
+  animation: modalPop 0.22s cubic-bezier(.4, 1.4, .5, 1);
+}
+.modal-cover {
+  width: 100%;
+  height: 200px;                 /* FIXED — same size no matter the API image dimensions */
+  object-fit: cover;             /* crop to fill, never distort */
+  object-position: center;
+  border-radius: var(--radius-section) var(--radius-section) 0 0;
+  display: block;
+  flex-shrink: 0;                /* never compresses */
+}
+.modal-content > .section,
+.modal-content > .modal-body {
+  overflow: visible;             /* the whole modal scrolls now, not just this */
+  align-items: stretch;
+  flex: 0 0 auto;
+  padding: 1.3rem 1.6rem;
+}
+.modal-content > .section h2 {
+  font-size: 1.6rem;
+  align-self: flex-start;
+  margin-bottom: 0.4rem;
+}
+#modalDesc {
+  color: var(--text-soft);
+  line-height: 1.65;
+  font-size: 0.97rem;
+}
+.modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.4rem 0 0.9rem;
+  color: var(--text-muted);
+}
+@keyframes modalPop {
+  0%   { transform: scale(0.9) translateY(30px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Modal close button */
+.modal-close-btn, .game-card > button, .game-card .close {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  background: rgba(30,30,36,0.85);
+  border: none;
+  color: var(--accent);
+  font-size: 2rem;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  transition: background 0.16s, color 0.16s, box-shadow 0.16s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Modal action buttons — always visible (override §8 bug fix) */
+.modal-actions {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 1.3rem 1.3rem;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;        /* padding stays inside the width — no overflow */
+  background: var(--bg-modal);
+  border-top: 1px solid var(--border-subtle);
+  position: sticky;              /* stays pinned at the bottom while content scrolls */
+  bottom: 0;
+  z-index: 2;
+}
+.modal-actions .action-btn {
+  margin: 0;
+  flex: 1 1 0;
+  min-width: 0;                  /* lets buttons shrink so "Completed" never overflows */
+  max-width: none;
+  white-space: nowrap;
+  padding: 0.55em 0.4em;
+}
+
+/* ================================================================
+   SEE ALL page — wide card, roomy search bar, 3–4 per row (override §14)
+   ================================================================ */
+.seeall-section {
+  max-width: var(--seeall-max);
+  width: 100%;
+  margin: var(--card-gap-top) auto 3.5rem auto;
+  border-radius: var(--radius-wrapper);   /* match profile's 20px, not 12px */
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  padding: 2.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;        /* fill the card width, like profile — not centered */
+}
+.seeall-section .search-container {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  max-width: 860px;
+  margin: 1.5rem auto 0.5rem;
+}
+.seeall-section .search-container .search-input,
+.seeall-section #seeAllSearchInput {
+  flex: 1;
+  margin-bottom: 0;
+  font-size: 1.05rem;
+  padding: 0.85rem 1.3rem;
+}
+.seeall-section .search-container .btn-primary {
+  margin: 0;
+  max-width: 140px;
+  flex-shrink: 0;
+}
+.seeall-section .browse-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);  /* exactly 3 per row on desktop */
+  gap: 1.8rem;
+  width: 100%;
+  margin-top: 2rem;
+}
+.seeall-section .browse-header {
+  display: flex;
+  justify-content: space-between;   /* title left, Dashboard hard right */
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* ================================================================
+   SOCIAL page — real desktop card, two-up section grid (override §15)
+   ================================================================ */
+body .card-wrapper {
+  max-width: var(--social-max);
+  width: 100%;
+  margin-top: var(--card-gap-top);   /* same nav-to-card gap as profile & search */
+  padding: 2.5rem 2.8rem;
+}
+.social-section .browse-header,
+.card-wrapper .browse-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.8rem;
+}
+/* Buttons in any header sit at the right edge — kill the global auto-centering margin */
+.browse-header .btn-primary,
+.browse-header .btn-back {
+  margin: 0;
+  flex-shrink: 0;
+}
+.card-wrapper > .section {
+  max-width: none;
+  min-width: 0;
+  width: 100%;
+  margin-bottom: 1.4rem;
+}
+@media (min-width: 800px) {
+  .card-wrapper {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));  /* 2 across max, never 3 */
+    gap: 1.6rem 1.8rem;
+    align-items: stretch;       /* equal-height boxes in each row */
+  }
+  .card-wrapper > .browse-header {
+    grid-column: 1 / -1;       /* header always spans the full row */
+  }
+  .card-wrapper > .section {
+    margin-bottom: 0;
+    min-width: 0;              /* override the 320px dashboard min so cols can shrink */
+    height: 100%;             /* fill the grid cell so all boxes match */
+  }
+}
+
+/* === Profile reviews / misc tables === */
+.mini-game-thumb {
+  width: 160px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-right: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s ease;
+}
+.rating-flex {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  cursor: pointer;
+}
+.star { color: #555; }
+.star.filled { color: var(--accent); }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td {
+  min-width: 180px;
+  max-width: 420px;
+  padding: 0.5em 1em;
+  vertical-align: middle;
+  border: none;
+}
+.table tr:not(:last-child) { border-bottom: 1px solid var(--border-card); }
+.review-edit-input {
+  margin-bottom: 0;
+  padding: 0.4rem 0.8rem;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+.table td.game-title-cell { display: flex; align-items: center; gap: 1rem; }
+.game-title-cell { display: flex; align-items: center; gap: 0.7rem; }
+.profile-reviews-table, .profile-reviews-table table {
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1.2rem;
+  width: 90%;
+  max-width: 700px;
+}
+.profile-reviews-table th, .profile-reviews-table td {
+  padding: 0.7em 1em;
+  font-size: 1rem;
+  vertical-align: middle;
+}
+.profile-reviews-table th { color: var(--accent); background: #232323; font-weight: 700; }
+.profile-reviews-table td { color: var(--text-main); background: #23232b; }
+.my-reviews-table td.edit-input {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex;
+  align-items: center;
+  margin: 0;
+}
+.my-reviews-table td.star { line-height: 1; }
+.review-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: flex-end;
+  align-items: center;
+}
+.my-reviews-table td {
+  vertical-align: middle;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+.review-actions .btn-primary { margin: 0; }
+
+/* === Admin Dashboard === */
+.modal-actions1 { flex-direction: column; gap: 0.7rem; }
+.modal-actions1 button { width: 100%; max-width: 100%; margin: 0; }
+.admin-table th, .admin-table td {
+  min-width: 180px;
+  max-width: 420px;
+  padding: 0.5em 1em;
+  text-align: center;
+}
+.admin-table tr:not(:last-child) td { border-bottom: 1px solid var(--border-card); }
+.action-btns {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+}
+.action-btns button { width: 120px; margin: 0; }
+
+/* ================================================================
+   RESPONSIVE — one reconciled set of breakpoints.
+   (Merged the base media queries with override §13 + §16; the old
+   pair had conflicting rules at 480/768/800 that fought each other.)
+   ================================================================ */
+
+/* Tablet / small desktop */
+@media (max-width: 800px) {
+  .card-wrapper { max-width: 540px; padding: 1.8rem 1.4rem; }
+  .seeall-section { padding: 1.8rem 1.4rem; }
+  .seeall-section .search-container { flex-direction: column; max-width: 100%; }
+  .seeall-section .search-container .btn-primary { max-width: 100%; }
+  .seeall-section .browse-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1.2rem; }
+}
+
+@media (max-width: 768px) {
+  html { font-size: 15px; }
+  .container { padding: 0 20px; }
+  .card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .game-thumb { height: 190px; }
+  .modal-cover { height: 180px; }
+  .dashboard-row { flex-direction: row; flex-wrap: wrap; gap: 1.5rem; }
+}
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  html { font-size: 14px; }
+  .welcome-message h2 { font-size: 1.9rem; }
+  .container { padding: 0 16px; }
+  .dashboard-row { flex-direction: column; gap: 1rem; }
+  .card-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .seeall-section .browse-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .game-thumb { height: 160px; }
+  .section { min-width: 100%; max-height: none; }
+  .game-card { max-height: none; height: auto; }
+  .modal-overlay { padding-top: 76px; padding-left: 12px; padding-right: 12px; }
+  .modal-content { max-height: calc(100vh - 96px); }
+  .modal-actions { flex-direction: column; }
+  .modal-actions .action-btn { width: 100%; }
+}
+
+/* Capsule hugs the edges tighter on small screens (override §17 tail) */
+@media (max-width: 600px) {
+  header { top: 10px; padding: 0 10px; }
+  header .header-content {
+    /* Logo stays put on the left; nav scrolls on the right. Keep them on
+       ONE row instead of wrapping into a ragged multi-row pile. */
+    padding: 0.55rem 0.9rem;
+    border-radius: 26px;
+    flex-wrap: nowrap;
+    gap: 0.75rem;
+  }
+  header h1 a { font-size: 1.25rem; }
+  header h1 { flex: 0 0 auto; }   /* logo never shrinks */
+
+  /* Nav becomes a single horizontal strip you can swipe through, so all
+     links (Profile / Admin / Search / Social / Logout) stay reachable
+     no matter how many there are or how narrow the screen is. */
+  nav {
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;   /* momentum scroll on iOS */
+    scrollbar-width: none;                /* hide scrollbar (Firefox) */
+    justify-content: flex-end;
+  }
+  nav::-webkit-scrollbar { display: none; }   /* hide scrollbar (WebKit) */
+  nav a {
+    font-size: 1rem;
+    white-space: nowrap;        /* never break a link across lines */
+    flex: 0 0 auto;
+  }
+  main.main-content, main.main-content1 { padding-top: 120px; }
+}
+
+/* ================================================================
+   RESPONSIVE SAFETY NET (appended)
+   Fixes two specific things: the admin table forcing a fixed
+   1400px width, and any stray element pushing horizontal overflow
+   on small screens. Everything else above already reflows.
+   ================================================================ */
+
+/* Never allow sideways scroll of the whole page on mobile */
+@media (max-width: 768px) {
+  html, body { max-width: 100%; overflow-x: hidden; }
+}
+
+/* ================================================================
+   ADMIN PAGE — final fix.
+   Root cause of the off-centre / clipped-buttons table was the base
+   rule `.admin-table th,td { min-width: 180px }` — 6 columns forced a
+   ~1080px floor, wider than the content needs, so the table overflowed
+   its container (pushed right, Actions clipped). Fix: drop the rigid
+   per-cell minimum, let the table size to its content and centre, and
+   only scroll when the screen is genuinely too narrow.
+   ================================================================ */
+.admin-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* The scroll container is #userTable (JS injects the table straight into
+   it). Let it scroll horizontally ONLY when content actually overflows. */
+#userTable {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Table sizes to its content and fills the container — no forced floor. */
+#userTable .admin-table,
+.admin-table {
+  width: 100%;
+  min-width: 0;        /* kill any inherited min-width that forced overflow */
+  overflow: visible;   /* don't clip the Actions column */
+}
+
+/* Override the base 180px-per-cell floor that was the real problem.
+   Let columns size to content; only the Actions column gets a floor so
+   its buttons never wrap. */
+#userTable .admin-table th,
+#userTable .admin-table td {
+  min-width: 0;
+  white-space: nowrap;   /* keep cells on one line, columns stay tidy */
+}
+#userTable .admin-table th:last-child,
+#userTable .admin-table td:last-child {
+  min-width: 150px;
+  white-space: normal;
+}
+
+/* Row Edit/Delete: stacked, evenly spaced, consistent width. */
+.action-btns {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+  padding: 0.3rem 0;
+}
+.action-btns button { width: 100%; min-width: 110px; margin: 0; }
+
+/* Edit-user modal Save/Cancel: real separation + taller hit area
+   (container class is .modal-actions1). */
+.modal-actions1 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.1rem 0 0.4rem;
+  margin-top: 0.4rem;
+}
+.modal-actions1 button { width: 100%; margin: 0; padding: 0.75rem 1rem; }
+
+/* Only below this width does the table become genuinely too wide for the
+   screen — then (and only then) allow horizontal scroll of the table. */
+@media (max-width: 720px) {
+  #userTable .admin-table { min-width: 640px; }
+}
+/* ================================================================
+   LANDING PAGE — two-column hero (left pitch / right auth)
+   Splits on desktop, stacks on mobile. Reuses existing card + button
+   styles; only adds the split layout and the left intro column.
+   ================================================================ */
+.landing-split {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 2.5rem;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* LEFT: the pitch. Vertically centred next to the auth card. */
+.landing-intro {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem 0.5rem;
+}
+.landing-title {
+  font-size: 2.4rem;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  color: var(--text-main, #fff);
+}
+.landing-lead {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--text-muted, #c9c9d2);
+  margin: 0 0 1.5rem;
+}
+.landing-points {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.landing-points li {
+  position: relative;
+  padding-left: 1.6rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text-muted, #c9c9d2);
+}
+.landing-points li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: var(--accent, #e94560);
+  font-weight: 700;
+}
+.landing-points strong { color: var(--text-main, #fff); }
+
+/* RIGHT: the auth card column. Fixed comfortable width on desktop. */
+.landing-auth {
+  flex: 0 0 380px;
+  display: flex;
+  align-items: center;
+}
+.landing-auth .login-card {
+  width: 100%;
+  max-width: 380px;     /* override the global 480px so it fits the column */
+  margin: 0;
+}
+.auth-heading { margin: 0 0 0.4rem; }
+
+/* STACK on tablet/mobile: intro on top, auth card below, both full width. */
+@media (max-width: 860px) {
+  .landing-split {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.8rem;
+    max-width: 480px;
+  }
+  .landing-intro {
+    text-align: center;
+    align-items: center;
+    padding: 0;
+  }
+  .landing-title { font-size: 2rem; }
+  .landing-points { text-align: left; }   /* keep bullets readable */
+  .landing-auth { flex: 1 1 auto; width: 100%; }
+  .landing-auth .login-card { max-width: 100%; }
+}
+
+/* --- Landing tweaks: button alignment in card, vertical centring, top gap --- */
+
+/* Give the landing a bit more breathing room below the nav capsule. */
+.auth-page main.main-content1 {
+  padding-top: calc(var(--header-clear) + 48px);
+  justify-content: center;
+}
+
+/* Buttons inside the auth card: flush full-width, equal edges, consistent
+   spacing — overrides the differing 350px/300px max-widths that made them
+   look ragged and inset. */
+.landing-auth .login-card .btn-primary1,
+.landing-auth .login-card .btn-google-dark {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  justify-content: center;   /* centre the label/icon within the full-width button */
+}
+.landing-auth .login-card .btn-primary1 { margin: 0.55rem 0; }
+.landing-auth .login-card .btn-google-dark { margin: 0.55rem 0 0; }
+.landing-auth .login-card .separator { margin: 0.8rem 0; }
+
+/* Vertically centre the auth card against the taller intro column. */
+.landing-split { align-items: center; }
+
+/* Make the Google button compute the same rendered width as Register/Login:
+   it has a 2px border but no border-box, so its border was adding to the
+   width. Force border-box so all three buttons are pixel-identical width. */
+.landing-auth .login-card .btn-google-dark {
+  box-sizing: border-box;
+}

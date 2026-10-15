@@ -8,6 +8,37 @@ const { ensureAuth, getLoggedInUserId } = require('../utils/auth');
 // Apply ensureAuth to all /social routes
 router.use(ensureAuth);
 
+// Friend ids for a user, as a CTE body. Friends rows can point either way.
+const FRIEND_IDS = `
+  SELECT DISTINCT CASE WHEN User_ID_1 = $1 THEN User_ID_2 ELSE User_ID_1 END AS fid
+  FROM Friends WHERE User_ID_1 = $1 OR User_ID_2 = $1`;
+
+// Friends who have this game in their library or reviewed it
+router.get('/games/:id/friends', async (req, res) => {
+  const userId = getLoggedInUserId(req);
+  const gameId = parseInt(req.params.id, 10);
+  if (Number.isNaN(gameId) || gameId < 1) {
+    return res.status(400).json({ error: 'Invalid game ID' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `WITH f AS (${FRIEND_IDS})
+       SELECT u.User_ID AS "userId", u.Username AS "username",
+              ug.Status AS "status", gr.Rating AS "rating"
+       FROM f
+       JOIN MPUser u ON u.User_ID = f.fid
+       LEFT JOIN User_Game ug ON ug.User_ID = f.fid AND ug.Game_ID = $2
+       LEFT JOIN Game_Reviews gr ON gr.User_ID = f.fid AND gr.Game_ID = $2
+       WHERE ug.Status IS NOT NULL OR gr.Rating IS NOT NULL
+       ORDER BY gr.Rating DESC NULLS LAST, u.Username`,
+      [userId, gameId]
+    );
+    return res.json(rows);
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to fetch friends for this game' });
+  }
+});
+
 // Check user status and friend request eligibility in a single query
 async function checkUserAndFriendStatus(userId, receiverId) {
   const { rows } = await pool.query(

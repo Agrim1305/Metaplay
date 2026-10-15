@@ -10,8 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
 
   <!-- Global stylesheet (header, footer, resets, etc.) -->
-  <link rel="stylesheet" href="/stylesheets/style.css" />
-  <link rel="stylesheet" href="/stylesheets/style-overrides.css" />
+  <link rel="stylesheet" href="/stylesheets/legacy.css" />
 
   <!-- SCRIPTS: Header then Dashboard logic -->
   <script src="/js/header.js" defer></script>
@@ -76,38 +75,6 @@
       </div>
     </main>
 
-    <!-- GAME DETAILS MODAL -->
-    <div id="gameModal" class="modal-overlay hidden" aria-hidden="true" tabindex="-1">
-      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-label="Game Details">
-        <button type="button" class="modal-close-btn" aria-label="Close details modal">&times;</button>
-        <img id="modalCover" class="modal-cover"
-          src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Game Cover" />
-        <div class="section modal-body" style="border-radius: 0px;">
-          <h2 id="modalTitle">Game Title</h2>
-          <p class="modal-meta">
-            <span id="modalRelease">Release Date: N/A</span>
-            <span id="modalRating"></span>
-          </p>
-          <p id="modalDesc"></p>
-          <!-- Modal review section: stars, textarea, save -->
-          <div id="modalReviewSection" style="display:none;">
-            <form id="reviewForm" autocomplete="off">
-              <label for="modalReviewTextarea">Your Review:</label>
-              <textarea id="modalReviewTextarea" placeholder="Write your review..." rows="3"></textarea>
-              <div id="modalStarRating" class="star-container" aria-label="Rating">
-                <!-- JS will generate ★★★★★ here -->
-              </div>
-              <button type="submit" class="save-btn btn-primary" style="margin-top:1.1rem;">Save</button>
-            </form>
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" id="addToWishlist" class="action-btn">Wishlist</button>
-          <button type="button" id="addToCurrent" class="action-btn">Playing</button>
-          <button type="button" id="addToCompleted" class="action-btn">Completed</button>
-        </div>
-      </div>
-    </div>
 
     <!-- FOOTER -->
     <footer>
@@ -116,14 +83,6 @@
       </div>
     </footer>
   </div>
-
-
-  <script>
-    // Modal action buttons are always visible — pinned at the bottom of the
-    // modal by the three-zone CSS layout (fixed cover, scrolling body, fixed actions).
-    // The old scroll-reveal logic was removed because it hid the buttons until the
-    // user scrolled to the very bottom, which often wasn't reachable.
-  </script>
 </body>
 
 </html>

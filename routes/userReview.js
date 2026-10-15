@@ -39,7 +39,7 @@ router.get('/:gameId', async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      'SELECT Rating AS "rating", Review AS "review" FROM Game_Reviews WHERE User_ID = $1 AND Game_ID = $2',
+      'SELECT Rating AS "rating", Review AS "review", Updated_At AS "updatedAt" FROM Game_Reviews WHERE User_ID = $1 AND Game_ID = $2',
       [userId, gameId]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Review not found' });
