@@ -1,45 +1,27 @@
-<!-- public/pages/auth_required.html -->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Authentication Required - MetaPlay</title>
-
-  <!-- Google Font: Inter -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-
-  <!-- Global stylesheet (header, footer, resets, etc.) -->
-  <link rel="stylesheet" href="/stylesheets/legacy.css" />
-
-  <!-- DYNAMIC NAVBAR (injects <header>...</header>) -->
-  <script src="/js/header.js" defer></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in to continue · MetaPlay</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16.png">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+  <link rel="stylesheet" href="/stylesheets/landing.css">
 </head>
-
-<body class="auth-page">
-  <div class="page-wrapper">
-    <!-- DYNAMIC HEADER PLACEHOLDER -->
-    <div id="header-include"></div>
-
-    <!-- MAIN CONTENT -->
-    <main class="main-content" role="main">
-      <div class="container">
-        <div class="auth-card">
-          <h2>Authentication Required</h2>
-          <p>You must be logged in or register for an account to access that page.</p>
-          <a href="/pages/login.html" class="btn-primary">Log In</a>
-          <div class="separator">OR</div>
-          <a href="/pages/registration.html" class="btn-primary">Register</a>
-        </div>
+<body>
+  <header class="l-head">
+    <a class="l-brand" href="/" aria-label="MetaPlay home"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="logo-body" d="M5.8 2.5H16.4L19 5.1V21.2L12 16.6L5 21.2V3.3C5 2.9 5.4 2.5 5.8 2.5Z"/><rect class="logo-label" x="7.6" y="5.4" width="8.8" height="6.2" rx="0.7"/><rect class="logo-grip" x="7.6" y="13" width="8.8" height="0.9"/></svg><span>MetaPlay</span></a>
+  </header>
+  <main class="a-main">
+    <div class="a-card">
+      <h1>Sign in to continue</h1>
+      <p class="a-sub">That page lives on your shelf. Sign in, or create an account in about thirty seconds.</p>
+      <div class="a-stack">
+        <a class="l-cta" href="/pages/login.html">Sign in</a>
+        <a class="l-google l-light" href="/pages/registration.html">Create an account</a>
       </div>
-    </main>
-
-    <!-- FOOTER -->
-    <footer>
-      <div class="container footer-content">2025 MetaPlay.</div>
-    </footer>
-  </div>
+    </div>
+  </main>
 </body>
-
 </html>

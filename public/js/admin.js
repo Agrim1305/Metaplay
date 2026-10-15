@@ -1,234 +1,106 @@
-/* global showToast */
-function customConfirm(message) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('confirmModal');
-        const confirmText = document.getElementById('confirmText');
-        const ok = document.getElementById('confirmOk');
-        const cancel = document.getElementById('confirmCancel');
+// Admin: list, edit and delete users. Restyled only; same endpoints and rules as before.
+import './ui/nav.js';
+import { api } from './ui/api.js';
+import { html } from './ui/dom.js';
+import { toast } from './ui/toast.js';
+import { loaded } from './ui/skeleton.js';
 
-        // Fallback if any element is missing
-        if (!modal || !confirmText || !ok || !cancel) {
-            showToast('Confirmation dialog unavailable');
-            resolve(false);
-            return;
-        }
+const $ = (id) => document.getElementById(id);
+let users = [];
 
-        confirmText.textContent = message;
-        modal.style.display = 'flex';
-
-        let onOk;
-        let onCancel;
-        const cleanup = () => {
-            modal.style.display = 'none';
-            ok.removeEventListener('click', onOk);
-            cancel.removeEventListener('click', onCancel);
-        };
-        onOk = () => {
-            cleanup();
-            resolve(true);
-        };
-        onCancel = () => {
-            cleanup();
-            resolve(false);
-        };
-
-        ok.addEventListener('click', onOk);
-        cancel.addEventListener('click', onCancel);
-    });
+function confirmDelete(message) {
+  return new Promise((resolve) => {
+    const dlg = $('confirmModal');
+    $('confirmText').textContent = message;
+    const done = (ok) => () => { dlg.close(); resolve(ok); };
+    $('confirmOk').onclick = done(true);
+    $('confirmCancel').onclick = done(false);
+    dlg.onclose = () => resolve(false); // Esc
+    dlg.showModal();
+  });
 }
 
-const loadUsers = async () => {
-    const container = document.getElementById('userTable');
-    if (!container) return;
-
-    container.innerHTML = '<p class="loading-text"><em>Loading…</em></p>';
-
-    try {
-        const res = await fetch('/admin/users', { credentials: 'include' });
-        if (!res.ok) throw new Error(`Load failed (${res.status})`);
-
-        const users = await res.json();
-        if (!Array.isArray(users) || users.length === 0) {
-            container.innerHTML = '<p class="no-users-text">No users found.</p>';
-            return;
-        }
-
-        let html = `
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>ID</th><th>Username</th><th>Email</th>
-            <th>Bio</th><th>Role</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
-        users.forEach((u) => {
-            html += `
-        <tr data-id="${u.id}">
-          <td>${u.id}</td>
+async function loadUsers() {
+  const box = $('userTable');
+  try {
+    users = await api('/admin/users');
+  } catch (err) {
+    if (err.status === 403) { location.replace('/pages/accessDenied.html'); return; }
+    loaded(box);
+    box.innerHTML = html`<div class="empty boxed"><span>Couldn’t load users. ${err.message}</span></div>`;
+    return;
+  }
+  loaded(box);
+  $('user-count').textContent = `${users.length} account${users.length === 1 ? '' : 's'}`;
+  box.innerHTML = users.length ? html`
+    <table class="table">
+      <thead><tr><th scope="col">ID</th><th scope="col">Username</th><th scope="col">Email</th><th scope="col">Bio</th><th scope="col">Role</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>${users.map((u) => html`
+        <tr>
+          <td class="mono faint">${u.id}</td>
           <td>${u.username}</td>
-          <td>${u.email}</td>
-          <td>${u.bio || ''}</td>
-          <td>${u.role}</td>
-          <td class="action-btns">
-            <button class="btn-primary" data-edit-id="${u.id}">Edit</button>
-            <button class="btn-secondary" data-delete-id="${u.id}">Delete</button>
+          <td class="muted">${u.email}</td>
+          <td class="muted cell-clip">${u.bio || ''}</td>
+          <td>${u.role === 'admin' ? html`<span class="role-pill">admin</span>` : 'user'}</td>
+          <td class="cell-actions">
+            <button type="button" class="btn btn-secondary btn-sm" data-edit="${u.id}">Edit</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-delete="${u.id}" aria-label="Delete ${u.username}">Delete</button>
           </td>
-        </tr>
-      `;
-        });
+        </tr>`)}</tbody>
+    </table>` : html`<div class="empty boxed"><span>No users found.</span></div>`;
+}
 
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-
-    } catch (err) {
-        showToast(err.message);
-    }
-};
-
-const deleteUser = async (id) => {
-    if (!await customConfirm('Delete this user?')) return;
-
-    try {
-        const res = await fetch(`/admin/users/${id}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-        const txt = await res.text();
-
-        if (!res.ok) {
-            let msg;
-            try { msg = JSON.parse(txt).error; } catch (error) { msg = txt; }
-            throw new Error(msg);
-        }
-
-        showToast('User deleted.');
-        await loadUsers();
-
-    } catch (err) {
-        showToast(err.message);
-    }
-};
-
-const openEditModal = (id) => {
-    const row = document.querySelector(`tr[data-id="${id}"]`);
-    const editModal = document.getElementById('editModal');
-    const editUserId = document.getElementById('editUserId');
-    const editUsername = document.getElementById('editUsername');
-    const editEmail = document.getElementById('editEmail');
-    const editBio = document.getElementById('editBio');
-    const editRole = document.getElementById('editRole');
-    const editOriginalRole = document.getElementById('editOriginalRole');
-
-    if (!row || !editModal || !editUserId || !editUsername
-        || !editEmail || !editBio || !editRole || !editOriginalRole) {
-        showToast('Edit form elements not found.');
-        return;
-    }
-
-    const uname = row.children[1].textContent;
-    const origRole = row.children[4].textContent;
-
-    editUserId.value = id;
-    editUsername.value = uname;
-    editEmail.value = row.children[2].textContent;
-    editBio.value = row.children[3].textContent;
-
-    if (uname === 'Admin') {
-        editRole.value = 'admin';
-        editRole.disabled = true;
-    } else {
-        editRole.value = origRole;
-        editRole.disabled = false;
-    }
-
-    editOriginalRole.value = origRole;
-    editModal.style.display = 'flex';
-};
-
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Populate the user table
+async function deleteUser(id) {
+  const u = users.find((x) => x.id === id);
+  if (!await confirmDelete(`Delete ${u ? u.username : 'this user'}?`)) return;
+  try {
+    await api(`/admin/users/${id}`, { method: 'DELETE' });
+    toast('User deleted.');
     loadUsers();
+  } catch (err) {
+    toast(err.message);
+  }
+}
 
-    // 2. Logout button
-    const btnLogout = document.getElementById('btn-logout');
-    if (btnLogout) {
-        btnLogout.addEventListener('click', async (e) => {
-            e.preventDefault();
-            await fetch('/auth/logout', { credentials: 'include' });
-            window.location.replace('/pages/index.html');
-        });
-    }
+function openEdit(id) {
+  const u = users.find((x) => x.id === id);
+  if (!u) return;
+  $('editUserId').value = u.id;
+  $('editUsername').value = u.username;
+  $('editEmail').value = u.email;
+  $('editBio').value = u.bio || '';
+  $('editRole').value = u.role;
+  $('editRole').disabled = u.username === 'Admin';
+  $('editOriginalRole').value = u.role;
+  $('editModal').showModal();
+}
 
-    // 3. Delegate Edit/Delete clicks
-    const userTable = document.getElementById('userTable');
-    if (userTable) {
-        userTable.addEventListener('click', (e) => {
-            const editId = e.target.getAttribute('data-edit-id');
-            const deleteId = e.target.getAttribute('data-delete-id');
-
-            if (editId) {
-                openEditModal(Number(editId));
-            } else if (deleteId) {
-                deleteUser(Number(deleteId));
-            }
-        });
-    }
-
-    // 4. Cancel edit modal
-    const editCancel = document.getElementById('editCancel');
-    if (editCancel) {
-        editCancel.addEventListener('click', () => {
-            const editModal = document.getElementById('editModal');
-            if (editModal) editModal.style.display = 'none';
-        });
-    }
-
-    // 5. Submit edit form
-    const editForm = document.getElementById('editForm');
-    if (editForm) {
-        editForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const id = Number(document.getElementById('editUserId').value);
-            const username = document.getElementById('editUsername').value.trim();
-            const email = document.getElementById('editEmail').value.trim();
-            const bio = document.getElementById('editBio').value.trim();
-            const role = document.getElementById('editRole').value;
-            const origRole = document.getElementById('editOriginalRole').value;
-
-            try {
-                const res = await fetch(`/admin/users/${id}`, {
-                    method: 'PUT',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
- username, email, bio, role
-})
-                });
-                const txt = await res.text();
-                if (!res.ok) {
-                    let msg;
-                    try { msg = JSON.parse(txt).error; } catch (error) { msg = txt; }
-                    throw new Error(msg);
-                }
-
-                let msg = 'User updated.';
-                if (role !== origRole && username !== 'Admin') {
-                    msg += ' Role changes take effect after logout.';
-                }
-                showToast(msg);
-
-                const editModal = document.getElementById('editModal');
-                if (editModal) editModal.style.display = 'none';
-
-                await loadUsers();
-
-            } catch (err) {
-                showToast(err.message);
-            }
-        });
-    }
+$('userTable').addEventListener('click', (e) => {
+  const edit = e.target.closest('[data-edit]');
+  const del = e.target.closest('[data-delete]');
+  if (edit) openEdit(Number(edit.dataset.edit));
+  if (del) deleteUser(Number(del.dataset.delete));
 });
+
+$('editCancel').addEventListener('click', () => $('editModal').close());
+
+$('editForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = $('editUsername').value.trim();
+  const role = $('editRole').value;
+  try {
+    await api(`/admin/users/${$('editUserId').value}`, {
+      method: 'PUT',
+      body: { username, email: $('editEmail').value.trim(), bio: $('editBio').value.trim(), role },
+    });
+    let msg = 'User updated.';
+    if (role !== $('editOriginalRole').value && username !== 'Admin') msg += ' Role changes take effect after logout.';
+    toast(msg);
+    $('editModal').close();
+    loadUsers();
+  } catch (err) {
+    toast(err.message);
+  }
+});
+
+loadUsers();
