@@ -93,7 +93,7 @@ function renderCard({ user, stats, lib, reviews, games }) {
       </div>
       <div class="lvl">
         <div class="lvl-top">
-          <div class="lvl-n"><span>Level</span><span class="num lvl-num">${lv.level}</span></div>
+          <div class="lvl-n"><span>Level</span><span class="num lvl-num" style="background:linear-gradient(135deg,#FFD27A,#FF4D6D);-webkit-background-clip:text;background-clip:text;color:transparent">${lv.level}</span></div>
           <span class="lvl-xp">${lv.xp.toLocaleString()} XP</span>
         </div>
         <div class="xpbar" role="progressbar" aria-label="Progress to level ${lv.level + 1}" aria-valuenow="${lv.pct}" aria-valuemin="0" aria-valuemax="100"><div style="width:${lv.pct}%"></div></div>

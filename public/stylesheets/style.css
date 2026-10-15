@@ -618,7 +618,7 @@ dialog.dlg h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
 .lvl-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
 .lvl-n { display: flex; align-items: baseline; gap: 8px; }
 .lvl-n span:first-child { font-size: 13px; color: var(--ink-2); }
-.lvl-num { font-size: 56px; background: linear-gradient(135deg, #FFD27A, #FF4D6D); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lvl-num { font-size: 56px; color: #FFB547; }
 .lvl-xp { font: 13px var(--font-mono); color: var(--ink-body); }
 .xpbar { height: 10px; margin-top: 10px; border-radius: 999px; background: #24262B; overflow: hidden; }
 .xpbar > div { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #FF4D6D, #FFB547); min-width: 4px; }
