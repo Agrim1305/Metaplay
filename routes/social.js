@@ -39,6 +39,76 @@ router.get('/games/:id/friends', async (req, res) => {
   }
 });
 
+// Everything the profile page needs from SQL. Level and badges are derived client side.
+router.get('/me/stats', async (req, res) => {
+  const userId = getLoggedInUserId(req);
+  try {
+    const [{ rows: [c] }, { rows: hist }] = await Promise.all([
+      pool.query(
+        `WITH f AS (${FRIEND_IDS})
+         SELECT
+           (SELECT COUNT(*) FROM User_Game WHERE User_ID = $1 AND Status = 'wishlist') AS wishlist,
+           (SELECT COUNT(*) FROM User_Game WHERE User_ID = $1 AND Status = 'collection') AS playing,
+           (SELECT COUNT(*) FROM User_Game WHERE User_ID = $1 AND Status = 'played') AS completed,
+           (SELECT COUNT(*) FROM Game_Reviews WHERE User_ID = $1) AS reviews,
+           (SELECT AVG(Rating) FROM Game_Reviews WHERE User_ID = $1) AS average,
+           (SELECT COUNT(*) FROM f) AS friends,
+           EXISTS (SELECT 1 FROM MPGroup WHERE Owner_ID = $1) AS owns_group`,
+        [userId]
+      ),
+      pool.query(
+        'SELECT Rating AS rating, COUNT(*) AS n FROM Game_Reviews WHERE User_ID = $1 GROUP BY Rating',
+        [userId]
+      )
+    ]);
+    const histogram = Array(10).fill(0);
+    hist.forEach((h) => { histogram[h.rating - 1] = Number(h.n); });
+    const counts = { wishlist: Number(c.wishlist), playing: Number(c.playing), completed: Number(c.completed) };
+    return res.json({
+      counts,
+      tracked: counts.wishlist + counts.playing + counts.completed,
+      reviews: Number(c.reviews),
+      averageScore: c.average === null ? null : Number(Number(c.average).toFixed(1)),
+      histogram,
+      friends: Number(c.friends),
+      ownsGroup: c.owns_group
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to load stats' });
+  }
+});
+
+// Friends' activity: reviews plus "started playing" / "completed" status changes.
+router.get('/feed', async (req, res) => {
+  const userId = getLoggedInUserId(req);
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
+  try {
+    const { rows } = await pool.query(
+      `WITH f AS (${FRIEND_IDS})
+       SELECT e.kind, e.user_id AS "userId", u.Username AS "username", e.game_id AS "gameId",
+              g.Title AS "title", e.rating, e.review, e.at
+       FROM (
+         SELECT 'review' AS kind, gr.User_ID AS user_id, gr.Game_ID AS game_id,
+                gr.Rating AS rating, gr.Review AS review, gr.Created_At AS at
+         FROM Game_Reviews gr JOIN f ON f.fid = gr.User_ID
+         UNION ALL
+         SELECT CASE ug.Status WHEN 'collection' THEN 'playing' ELSE 'completed' END,
+                ug.User_ID, ug.Game_ID, NULL, NULL, ug.Updated_At
+         FROM User_Game ug JOIN f ON f.fid = ug.User_ID
+         WHERE ug.Status IN ('collection', 'played')
+       ) e
+       JOIN MPUser u ON u.User_ID = e.user_id
+       LEFT JOIN Games g ON g.Game_ID = e.game_id
+       ORDER BY e.at DESC
+       LIMIT $2`,
+      [userId, limit]
+    );
+    return res.json(rows);
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to load activity' });
+  }
+});
+
 // Check user status and friend request eligibility in a single query
 async function checkUserAndFriendStatus(userId, receiverId) {
   const { rows } = await pool.query(
@@ -242,12 +312,19 @@ router.get('/friends', async (req, res) => {
     const { rows: friends } = await pool.query(
       `SELECT u.User_ID AS "User_ID", u.Username AS "Username",
               u.Email AS "Email", u.Bio AS "Bio",
-              f.Timestamp_When_Friended AS "Timestamp_When_Friended"
+              f.Timestamp_When_Friended AS "Timestamp_When_Friended",
+              np.Game_ID AS "nowPlayingId", npg.Title AS "nowPlayingTitle"
        FROM Friends f
        JOIN MPUser u ON (
          (f.User_ID_1 = $1 AND f.User_ID_2 = u.User_ID) OR
          (f.User_ID_2 = $2 AND f.User_ID_1 = u.User_ID)
        )
+       LEFT JOIN LATERAL (
+         SELECT Game_ID FROM User_Game
+         WHERE User_ID = u.User_ID AND Status = 'collection'
+         ORDER BY Updated_At DESC LIMIT 1
+       ) np ON TRUE
+       LEFT JOIN Games npg ON npg.Game_ID = np.Game_ID
        WHERE f.User_ID_1 = $3 OR f.User_ID_2 = $4
        ORDER BY u.Username`,
       [userId, userId, userId, userId]
@@ -281,25 +358,26 @@ router.delete('/friends/:friendId', async (req, res) => {
 });
 
 // Search groups
+// An empty search lists the biggest groups, so the Social page has groups to suggest.
 router.get('/groups/search', async (req, res) => {
-  const searchTerm = req.query.q;
-  if (!searchTerm) {
-    return res.status(400).json({ error: 'Search term is required' });
-  }
+  const userId = getLoggedInUserId(req);
+  const searchTerm = (req.query.q || '').trim();
 
   try {
     const { rows: groups } = await pool.query(
       `SELECT g.Group_ID AS "Group_ID", g.Group_Name AS "Group_Name",
               g.Bio AS "Bio", g.Group_Type AS "Group_Type",
-              u.Username AS "Owner_Name",
-              COUNT(gm.User_ID) AS "Member_Count"
+              u.Username AS "Owner_Name", g.Owner_ID AS "Owner_ID",
+              COUNT(gm.User_ID) AS "Member_Count",
+              COALESCE(BOOL_OR(gm.User_ID = $3), FALSE) AS "Is_Member"
        FROM MPGroup g
        LEFT JOIN MPUser u ON g.Owner_ID = u.User_ID
        LEFT JOIN Group_Membership gm ON g.Group_ID = gm.Group_ID
-       WHERE g.Group_Name ILIKE $1 OR g.Bio ILIKE $2
+       WHERE $1 = '' OR g.Group_Name ILIKE $2 OR g.Bio ILIKE $2
        GROUP BY g.Group_ID, u.Username
-       LIMIT 10`,
-      [`%${searchTerm}%`, `%${searchTerm}%`]
+       ORDER BY COUNT(gm.User_ID) DESC, g.Group_Name
+       LIMIT 12`,
+      [searchTerm, `%${searchTerm}%`, userId]
     );
     const mappedGroups = groups.map((g) => ({
       id: g.Group_ID,
@@ -307,7 +385,9 @@ router.get('/groups/search', async (req, res) => {
       description: g.Bio,
       memberCount: Number(g.Member_Count),
       owner: g.Owner_Name,
-      groupType: g.Group_Type
+      groupType: g.Group_Type,
+      isMember: g.Is_Member,
+      isOwner: g.Owner_ID === userId
     }));
     return res.json(mappedGroups);
   } catch (err) {
@@ -326,7 +406,7 @@ router.get('/groups', async (req, res) => {
     const { rows: groups } = await pool.query(
       `SELECT g.Group_ID AS "Group_ID", g.Group_Name AS "Group_Name",
               g.Bio AS "Bio", g.Group_Type AS "Group_Type",
-              u.Username AS "Owner_Name",
+              u.Username AS "Owner_Name", g.Owner_ID AS "Owner_ID",
               COUNT(gm2.User_ID) AS "Member_Count"
        FROM Group_Membership gm
        JOIN MPGroup g ON gm.Group_ID = g.Group_ID
@@ -343,7 +423,9 @@ router.get('/groups', async (req, res) => {
       description: g.Bio,
       memberCount: Number(g.Member_Count),
       owner: g.Owner_Name,
-      groupType: g.Group_Type
+      groupType: g.Group_Type,
+      isMember: true,
+      isOwner: g.Owner_ID === userId
     }));
     return res.json(mappedGroups);
   } catch (err) {

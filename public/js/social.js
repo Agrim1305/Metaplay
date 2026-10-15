@@ -1,393 +1,281 @@
-// Global variables
-let sentFriendRequests = [];
-let currentUserId = null;
+// Social: friend activity, one-tap requests, friends with "now playing", groups.
+import './ui/nav.js';
+import { api, me, batch } from './ui/api.js';
+import { html, icon, initials, ago } from './ui/dom.js';
+import { coverImg, covStyle, artFor } from './ui/art.js';
+import { gameHref } from './ui/gameCard.js';
+import { skeletonRows, loaded } from './ui/skeleton.js';
+import { toast } from './ui/toast.js';
 
-// Utility Functions
-function showToast(message) {
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.textContent = message;
-  document.body.appendChild(toast);
+const $ = (s) => document.querySelector(s);
+const VERB = { review: 'reviewed', playing: 'started playing', completed: 'completed' };
+let user = null;
+let friends = [];
+let sent = new Set();  // user ids with a pending request from me
+let groups = [];       // mine plus suggestions, with isMember / isOwner
 
-  setTimeout(() => {
-    toast.remove();
-  }, 3000);
-}
-
-// Display Functions
-function displayFriendRequests(requests) {
-  const container = document.getElementById('friendRequests');
-
-  if (!requests.length) {
-    container.innerHTML = '<p>No pending friend requests</p>';
+// ---------- Activity ----------
+async function loadFeed() {
+  const box = $('#feed');
+  box.innerHTML = skeletonRows(4);
+  let events;
+  try {
+    events = await api('/api/feed?limit=20');
+  } catch (err) {
+    loaded(box);
+    box.innerHTML = html`<div class="empty"><span>Couldn’t load activity. ${err.message}</span><button type="button" class="btn btn-secondary btn-sm" id="feed-retry">Try again</button></div>`;
+    $('#feed-retry').addEventListener('click', loadFeed);
     return;
   }
-
-  const html = requests.map((request) => `
-    <div class="section">
-      <div>
-        <h4>Request: ${request.Username}</h4>
-        <p>Bio: ${request.Bio || 'No bio available'}</p>
+  let games = {};
+  try { games = await batch(events.map((e) => e.gameId)); } catch { /* titles from DB, gradient covers */ }
+  loaded(box);
+  if (!events.length) {
+    box.innerHTML = html`<div class="empty"><span>${friends.length
+      ? 'Your friends haven’t logged anything yet.'
+      : 'Add friends to see what they’re playing and how they rate it.'}</span>
+      ${friends.length ? '' : html`<button type="button" class="btn btn-secondary btn-sm" id="find-friends">Find players</button>`}</div>`;
+    const b = $('#find-friends');
+    if (b) b.addEventListener('click', () => $('#find').focus());
+    return;
+  }
+  box.innerHTML = html`${events.map((e) => {
+    const g = games[e.gameId];
+    const title = (g && g.name) || e.title || 'a game';
+    return html`<article class="feed-item">
+      <span class="ava" aria-hidden="true">${initials(e.username)}</span>
+      <div class="feed-body">
+        <div class="feed-line"><b>${e.username}</b> ${VERB[e.kind] || 'updated'} <a href="${gameHref(e.gameId)}">${title}</a></div>
+        ${e.kind === 'review' ? html`<span class="mono feed-score">${e.rating}/10</span>` : ''}
+        ${e.review ? html`<p>${e.review}</p>` : ''}
+        <span class="faint small">${ago(e.at)}</span>
       </div>
-      <div class="modal-actions">
-        <button type="button" class="btn-secondary" onclick="handleFriendRequest('${request.Request_ID}', 'accept')">
-          Accept
-        </button>
-        <button type="button" class="btn-secondary" onclick="handleFriendRequest('${request.Request_ID}', 'reject')">
-          Reject
-        </button>
-      </div>
-    </div>
-  `).join('');
-
-  container.innerHTML = html;
+      <a class="cov feed-cov" href="${gameHref(e.gameId)}" tabindex="-1" aria-hidden="true" style="${covStyle(e.gameId)}">${coverImg(g && g.background_image, 420)}</a>
+    </article>`;
+  })}`;
 }
 
-function displayFriendsList(friends) {
-  const container = document.getElementById('friendsList');
-
-  if (!friends.length) {
-    container.innerHTML = '<p>No friends yet</p>';
-    return;
-  }
-
-  const html = friends.map((friend) => `
-    <div class="section">
-      <div>
-        <h4>Friend: ${friend.Username}</h4>
-        <p>Bio: ${friend.Bio || 'No bio available'}</p>
-      </div>
-      <button type="button" class="btn-secondary" onclick="removeFriend('${friend.User_ID}')">
-        Remove Friend
-      </button>
-    </div>
-  `).join('');
-
-  container.innerHTML = html;
+// ---------- Requests ----------
+async function loadRequests() {
+  const box = $('#requests');
+  let reqs = [];
+  try { reqs = await api('/api/friends/requests'); } catch { /* shown as empty */ }
+  const badge = $('#req-count');
+  badge.hidden = !reqs.length;
+  badge.textContent = reqs.length;
+  box.innerHTML = reqs.length
+    ? html`${reqs.map((r) => html`<div class="req-row" data-req="${r.Request_ID}" data-name="${r.Username}">
+        <span class="ava" aria-hidden="true">${initials(r.Username)}</span>
+        <div class="req-text"><div class="req-name">${r.Username}</div><div class="faint small">Sent ${ago(r.Timestamp).toLowerCase()}</div></div>
+        <button type="button" class="btn btn-primary btn-sm" data-act="accept">Accept</button>
+        <button type="button" class="btn btn-secondary btn-sm btn-icon" data-act="reject" aria-label="Decline ${r.Username}">${icon('close')}</button>
+      </div>`)}`
+    : html`<p class="faint small pad-y">No pending requests.</p>`;
 }
 
-function displayGroupsList(groups) {
-  const container = document.getElementById('groupsList');
-
-  if (!groups.length) {
-    container.innerHTML = '<p>Not a member of any groups</p>';
-    return;
-  }
-
-  const html = groups.map((group) => {
-    const groupName = group.name || 'Unnamed Group';
-    const groupDesc = group.description || 'No description available';
-    const memberText = typeof group.memberCount === 'number' ? group.memberCount : 'No members';
-    return `
-      <div class="section">
-        <div>
-          <h4>Group: ${groupName}</h4>
-          <p>Bio: ${groupDesc}</p>
-          <p>Members: ${memberText}</p>
-        </div>
-        <button type="button" class="btn-secondary" onclick="leaveGroup('${group.id}')">
-          Leave Group
-        </button>
-      </div>
-    `;
-  }).join('');
-
-  container.innerHTML = html;
-}
-
-function displayUserSearchResults(users) {
-  const resultsContainer = document.getElementById('userSearchResults');
-
-  if (!users.length) {
-    resultsContainer.innerHTML = '<p>No users found</p>';
-    return;
-  }
-
-  // Get a set of IDs for pending requests
-  const pendingIds = new Set(sentFriendRequests.map((r) => r.Receiver_ID));
-
-  const html = users
-    .filter((user) => user.User_ID !== currentUserId) // filter out self
-    .map((user) => {
-      if (pendingIds.has(user.User_ID)) {
-        return `
-          <div class="section">
-            <div>
-              <h4>User: ${user.Username}</h4>
-              <p>Bio: ${user.Bio || 'No bio available'}</p>
-            </div>
-            <button type="button" class="btn-secondary" disabled>Request Pending</button>
-          </div>
-        `;
-      }
-      return `
-        <div class="section">
-          <div>
-            <h4>User: ${user.Username}</h4>
-            <p>Bio: ${user.Bio || 'No bio available'}</p>
-          </div>
-          <button type="button" class="btn-primary" onclick="sendFriendRequest('${user.User_ID}')">Add Friend</button>
-        </div>
-      `;
-    }).join('');
-
-  resultsContainer.innerHTML = html;
-}
-
-function displayGroupSearchResults(groups) {
-  const resultsContainer = document.getElementById('groupSearchResults');
-
-  if (!groups.length) {
-    resultsContainer.innerHTML = '<p>No groups found</p>';
-    return;
-  }
-
-  const html = groups.map((group) => {
-    const groupName = group.name || 'Unnamed Group';
-    const groupDesc = group.description || 'No description available';
-    const memberText = typeof group.memberCount === 'number' ? group.memberCount : 'No members';
-    return `
-      <div class="section">
-        <div>
-          <h4>Group: ${groupName}</h4>
-          <p>Bio: ${groupDesc}</p>
-          <p>Members: ${memberText}</p>
-        </div>
-        <button type="button" class="btn-primary" onclick="joinGroup('${group.id}')">
-          Join Group
-        </button>
-      </div>
-    `;
-  }).join('');
-
-  resultsContainer.innerHTML = html;
-}
-
-// API Functions
-async function fetchCurrentUserId() {
+$('#requests').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const row = b.closest('.req-row');
+  const name = row.dataset.name;
+  const action = b.dataset.act;
+  row.hidden = true; // optimistic
   try {
-    const response = await fetch('/get-user', { credentials: 'include' });
-    if (!response.ok) return null;
-    const user = await response.json();
-    return user.userId;
-  } catch (error) {
-    return null;
+    await api(`/api/friends/request/${row.dataset.req}`, { method: 'POST', body: { action } });
+    toast(action === 'accept' ? `You and ${name} are now friends` : `Declined ${name}`);
+    await loadRequests();
+    if (action === 'accept') { await loadFriends(); loadFeed(); }
+  } catch (err) {
+    row.hidden = false;
+    toast(`Couldn’t ${action === 'accept' ? 'accept' : 'decline'}: ${err.message}`);
   }
-}
-
-async function loadSentFriendRequests() {
-  try {
-    const response = await fetch('/api/friends/requests/sent', {
-      credentials: 'include'
-    });
-    if (!response.ok) throw new Error('Failed to load sent friend requests');
-    sentFriendRequests = await response.json();
-  } catch (error) {
-    sentFriendRequests = [];
-  }
-}
-
-async function loadFriendRequests() {
-  try {
-    const response = await fetch('/api/friends/requests', {
-      credentials: 'include'
-    });
-
-    if (!response.ok) throw new Error('Failed to load friend requests');
-
-    const requests = await response.json();
-    displayFriendRequests(requests);
-  } catch (error) {
-    showToast('Failed to load friend requests');
-  }
-}
-
-async function loadFriendsList() {
-  try {
-    const response = await fetch('/api/friends', {
-      credentials: 'include'
-    });
-
-    if (!response.ok) throw new Error('Failed to load friends list');
-
-    const friends = await response.json();
-    displayFriendsList(friends);
-  } catch (error) {
-    showToast('Failed to load friends list');
-  }
-}
-
-async function loadGroupsList() {
-  try {
-    const response = await fetch('/api/groups', {
-      credentials: 'include'
-    });
-
-    if (!response.ok) throw new Error('Failed to load groups list');
-
-    const groups = await response.json();
-    displayGroupsList(groups);
-  } catch (error) {
-    showToast('Failed to load groups list');
-  }
-}
-
-async function handleUserSearch() {
-  const searchInput = document.getElementById('userSearch');
-  const searchTerm = searchInput.value.trim();
-
-  if (!searchTerm) {
-    showToast('Please enter a search term');
-    return;
-  }
-
-  try {
-    await loadSentFriendRequests();
-    const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchTerm)}`, {
-      credentials: 'include'
-    });
-
-    if (!response.ok) throw new Error('Search failed');
-
-    const users = await response.json();
-    displayUserSearchResults(users);
-  } catch (error) {
-    showToast('Failed to search users');
-  }
-}
-
-async function handleGroupSearch() {
-  const searchInput = document.getElementById('groupSearch');
-  const searchTerm = searchInput.value.trim();
-
-  if (!searchTerm) {
-    showToast('Please enter a search term');
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/groups/search?q=${encodeURIComponent(searchTerm)}`, {
-      credentials: 'include'
-    });
-
-    if (!response.ok) throw new Error('Search failed');
-
-    const groups = await response.json();
-    displayGroupSearchResults(groups);
-  } catch (error) {
-    showToast('Failed to search groups');
-  }
-}
-
-async function handleFriendRequest(requestId, action) {
-  try {
-    const response = await fetch(`/api/friends/request/${requestId}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action })
-    });
-
-    if (!response.ok) throw new Error(`Failed to ${action} friend request`);
-
-    showToast(`Friend request ${action}ed`);
-    loadFriendRequests();
-    loadFriendsList();
-  } catch (error) {
-    showToast(`Failed to ${action} friend request`);
-  }
-}
-
-async function sendFriendRequest(userId) {
-  try {
-    const response = await fetch('/api/friends/request', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include',
-      body: JSON.stringify({ receiverId: userId })
-    });
-
-    if (!response.ok) throw new Error('Failed to send friend request');
-
-    showToast('Friend request sent');
-    await loadSentFriendRequests();
-    handleUserSearch();
-  } catch (error) {
-    showToast('Failed to send friend request');
-  }
-}
-
-async function removeFriend(friendId) {
-  try {
-    const response = await fetch(`/api/friends/${friendId}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    });
-
-    if (!response.ok) throw new Error('Failed to remove friend');
-
-    showToast('Friend removed');
-    loadFriendsList();
-  } catch (error) {
-    showToast('Failed to remove friend');
-  }
-}
-
-async function joinGroup(groupId) {
-  try {
-    const response = await fetch(`/api/groups/${groupId}/join`, {
-      method: 'POST',
-      credentials: 'include'
-    });
-
-    if (!response.ok) throw new Error('Failed to join group');
-
-    showToast('Joined group');
-    loadGroupsList();
-  } catch (error) {
-    showToast('Failed to join group');
-  }
-}
-
-async function leaveGroup(groupId) {
-  try {
-    const response = await fetch(`/api/groups/${groupId}/leave`, {
-      method: 'DELETE',
-      credentials: 'include'
-    });
-
-    if (!response.ok) throw new Error('Failed to leave group');
-
-    showToast('Left group');
-    loadGroupsList();
-  } catch (error) {
-    showToast('Failed to leave group');
-  }
-}
-
-// Initialize everything after all functions are defined
-function initializeApp() {
-  // Initialize all sections
-  loadFriendRequests();
-  loadFriendsList();
-  loadGroupsList();
-
-  document.getElementById('searchUsers').addEventListener('click', handleUserSearch);
-  document.getElementById('searchGroups').addEventListener('click', handleGroupSearch);
-
-  document.getElementById('userSearch').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleUserSearch();
-  });
-  document.getElementById('groupSearch').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleGroupSearch();
-  });
-}
-
-// On page load, fetch current user ID and initialize app
-document.addEventListener('DOMContentLoaded', async () => {
-  currentUserId = await fetchCurrentUserId();
-  initializeApp();
 });
 
+// ---------- Friends ----------
+async function loadFriends() {
+  const box = $('#friends');
+  try {
+    friends = await api('/api/friends');
+  } catch (err) {
+    loaded(box);
+    box.innerHTML = html`<p class="faint small pad-y">Couldn’t load friends.</p>`;
+    return;
+  }
+  let games = {};
+  const missing = friends.filter((f) => f.nowPlayingId && !f.nowPlayingTitle).map((f) => f.nowPlayingId);
+  try { games = await batch(missing); } catch { /* fall back to "Playing" */ }
+  loaded(box);
+  $('#friend-count').textContent = friends.length || '';
+  box.innerHTML = friends.length
+    ? html`${friends.map((f) => {
+      const playing = f.nowPlayingId && (f.nowPlayingTitle || (games[f.nowPlayingId] && games[f.nowPlayingId].name) || 'a game');
+      return html`<div class="row friend-row">
+        <span class="ava sm" aria-hidden="true">${initials(f.Username)}</span>
+        <span class="friend-name">${f.Username}</span>
+        <span class="friend-now">${playing
+    ? html`${icon('play_arrow', { fill: true, cls: 'c-play', label: 'Playing' })}<a href="${gameHref(f.nowPlayingId)}">${playing}</a>`
+    : 'Not playing anything'}</span>
+        <button type="button" class="btn btn-secondary btn-sm btn-icon friend-remove" data-remove="${f.User_ID}" data-name="${f.Username}" aria-label="Remove ${f.Username} from friends">${icon('person_remove')}</button>
+      </div>`;
+    })}`
+    : html`<p class="faint small pad-y">No friends yet. Search for players above.</p>`;
+}
+
+$('#friends').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-remove]');
+  if (!b) return;
+  if (!confirm(`Remove ${b.dataset.name} from your friends?`)) return;
+  try {
+    await api(`/api/friends/${b.dataset.remove}`, { method: 'DELETE' });
+    toast(`Removed ${b.dataset.name}`);
+    await loadFriends();
+    loadFeed();
+  } catch (err) {
+    toast(`Couldn’t remove: ${err.message}`);
+  }
+});
+
+// ---------- Groups ----------
+const groupCard = (g) => html`<article class="grp">
+  <div class="grp-head">
+    <span class="cov grp-ini" style="background-image:${artFor(`g${g.id}`)}" aria-hidden="true">${initials(g.name)}</span>
+    <div class="grp-id"><div class="grp-name">${g.name || 'Unnamed group'}</div>
+      <div class="faint small">${[g.groupType, `${g.memberCount} member${g.memberCount === 1 ? '' : 's'}`].filter(Boolean).join(', ')}${g.isOwner ? ', yours' : ''}</div></div>
+  </div>
+  <p class="grp-bio">${g.description || 'No description yet.'}</p>
+  <button type="button" class="btn btn-sm ${g.isMember ? 'btn-secondary' : 'btn-primary'}" data-group="${g.id}" aria-pressed="${g.isMember}">
+    ${g.isMember ? (g.isOwner ? 'Owner' : 'Joined') : 'Join'}
+  </button>
+</article>`;
+
+function renderGroups() {
+  const box = $('#groups');
+  loaded(box);
+  box.innerHTML = groups.length
+    ? html`${groups.map(groupCard)}`
+    : html`<div class="empty boxed"><span>No groups yet. Start one for your co-op crew or backlog club.</span><a class="btn btn-secondary btn-sm" href="/pages/group_create.html">New group</a></div>`;
+}
+
+async function loadGroups() {
+  try {
+    const [mine, popular] = await Promise.all([api('/api/groups'), api('/api/groups/search?q=')]);
+    const byId = new Map([...mine, ...popular].map((g) => [g.id, g]));
+    groups = [...byId.values()].sort((a, b) => (b.isMember - a.isMember) || (b.memberCount - a.memberCount));
+  } catch {
+    groups = [];
+  }
+  renderGroups();
+}
+
+async function toggleGroup(id) {
+  const g = groups.find((x) => x.id === id) || searchGroups.find((x) => x.id === id);
+  if (!g) return;
+  if (g.isMember && g.isOwner
+    && !confirm(`You own ${g.name}. Leaving deletes the group for all ${g.memberCount} member${g.memberCount === 1 ? '' : 's'}. Delete it?`)) return;
+  const join = !g.isMember;
+  try {
+    if (join) await api(`/api/groups/${id}/join`, { method: 'POST' });
+    else await api(`/api/groups/${id}/leave`, { method: 'DELETE' });
+    toast(join ? `Joined ${g.name}` : (g.isOwner ? `Deleted ${g.name}` : `Left ${g.name}`));
+    if (!join && g.isOwner) groups = groups.filter((x) => x.id !== id);
+    for (const x of [...groups, ...searchGroups].filter((y) => y.id === id)) {
+      x.isMember = join;
+      x.memberCount += join ? 1 : -1;
+    }
+    if (!groups.some((x) => x.id === id) && join) groups.unshift(g);
+    renderGroups();
+    if (!$('#results').hidden) renderResults();
+  } catch (err) {
+    toast(`Couldn’t ${join ? 'join' : 'leave'}: ${err.message}`);
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-group]');
+  if (b) toggleGroup(Number(b.dataset.group));
+});
+
+// ---------- Search (players and groups) ----------
+let searchUsers = [];
+let searchGroups = [];
+let lastQ = '';
+
+function userAction(u) {
+  if (user && u.User_ID === user.userId) return html`<span class="faint small">You</span>`;
+  if (friends.some((f) => f.User_ID === u.User_ID)) return html`<span class="faint small">Friends</span>`;
+  if (sent.has(u.User_ID)) return html`<span class="faint small">Requested</span>`;
+  return html`<button type="button" class="btn btn-primary btn-sm" data-add="${u.User_ID}" data-name="${u.Username}">Add friend</button>`;
+}
+
+function renderResults() {
+  const box = $('#results');
+  box.hidden = false;
+  box.innerHTML = html`
+    <div class="sec-head"><h2>Results for “${lastQ}”</h2><button type="button" class="linkbtn" id="clear-search">Clear</button></div>
+    <div class="soc-res-cols">
+      <div>
+        <h3 class="small-h">Players</h3>
+        ${searchUsers.length ? searchUsers.map((u) => html`<div class="req-row">
+          <span class="ava" aria-hidden="true">${initials(u.Username)}</span>
+          <div class="req-text"><div class="req-name">${u.Username}</div><div class="faint small clamp">${u.Bio || ''}</div></div>
+          ${userAction(u)}
+        </div>`) : html`<p class="faint small pad-y">No players match.</p>`}
+      </div>
+      <div>
+        <h3 class="small-h">Groups</h3>
+        ${searchGroups.length ? html`<div class="groups compact">${searchGroups.map(groupCard)}</div>` : html`<p class="faint small pad-y">No groups match.</p>`}
+      </div>
+    </div>`;
+  $('#clear-search').addEventListener('click', () => {
+    $('#find').value = '';
+    box.hidden = true;
+    $('#find').focus();
+  });
+}
+
+let debounce;
+$('#find').addEventListener('input', (e) => {
+  clearTimeout(debounce);
+  const q = e.target.value.trim();
+  debounce = setTimeout(async () => {
+    if (q.length < 2) { $('#results').hidden = true; return; }
+    try {
+      const [users, grps, pending] = await Promise.all([
+        api(`/api/users/search?q=${encodeURIComponent(q)}`),
+        api(`/api/groups/search?q=${encodeURIComponent(q)}`),
+        api('/api/friends/requests/sent'),
+      ]);
+      if ($('#find').value.trim() !== q) return;
+      lastQ = q;
+      searchUsers = users;
+      searchGroups = grps;
+      sent = new Set(pending.map((r) => r.Receiver_ID));
+      renderResults();
+    } catch (err) {
+      toast(`Search failed: ${err.message}`);
+    }
+  }, 300);
+});
+
+$('#results').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-add]');
+  if (!b) return;
+  b.disabled = true;
+  try {
+    await api('/api/friends/request', { method: 'POST', body: { receiverId: Number(b.dataset.add) } });
+    sent.add(Number(b.dataset.add));
+    toast(`Friend request sent to ${b.dataset.name}`);
+    renderResults();
+  } catch (err) {
+    b.disabled = false;
+    toast(`Couldn’t send request: ${err.message}`);
+  }
+});
+
+// ---------- Boot ----------
+$('#friends').innerHTML = skeletonRows(3);
+$('#groups').innerHTML = skeletonRows(2);
+me().then((u) => { user = u; }).catch(() => {});
+loadRequests();
+loadFriends().then(loadFeed);
+loadGroups();

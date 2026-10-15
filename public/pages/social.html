@@ -1,78 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="/js/toast.js" defer></script>
-  <title>Social - MetaPlay</title>
-
-  <!-- Google Font: Inter -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-
-  <!-- Shared styles -->
-  <link rel="stylesheet" href="/stylesheets/legacy.css" />
-
-  <!-- Navbar injector -->
-  <script src="/js/header.js" defer></script>
-  <!-- Page logic -->
-  <script src="/js/social.js" defer></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Social · MetaPlay</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16.png">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+  <link rel="stylesheet" href="/stylesheets/style.css">
+  <script type="module" src="/js/social.js"></script>
 </head>
+<body data-page="social">
+  <main class="page social">
+    <div class="soc-top">
+      <h1 class="page-title">Friends</h1>
+      <label class="soc-search">
+        <span class="ms" aria-hidden="true">person_search</span>
+        <span class="sr-only">Find players or groups</span>
+        <input type="search" id="find" placeholder="Find players or groups" autocomplete="off">
+      </label>
+    </div>
 
-<body class="app-page">
-  <div class="page-wrapper">
-    <div id="header-include"></div>
+    <section class="soc-results" id="results" aria-label="Search results" aria-live="polite" hidden></section>
 
-    <main class="main-content" role="main">
-      <section class="card-wrapper">
-        <div class="browse-header">
-          <h2 class="browse-title">Social</h2>
-          <a href="/pages/group_create.html" class="btn-primary">Create a Group</a>
-        </div>
-
-        <!-- User Search Section -->
-        <div class="section">
-          <h3>Find Users</h3>
-          <div class="search-container">
-            <input type="text" id="userSearch" placeholder="Search for users..." class="search-input">
-            <button type="button" id="searchUsers" class="btn-primary">Search</button>
-          </div>
-          <div id="userSearchResults" class="card"></div>
-        </div>
-
-        <!-- Friend Requests Section -->
-        <div class="section">
-          <h3>Friend Requests</h3>
-          <div id="friendRequests" class="card"></div>
-        </div>
-
-        <!-- Current Friends Section -->
-        <div class="section">
-          <h3>Your Friends</h3>
-          <div id="friendsList" class="card"></div>
-        </div>
-
-        <!-- Group Search Section -->
-        <div class="section">
-          <h3>Find Groups</h3>
-          <div class="search-container">
-            <input type="text" id="groupSearch" placeholder="Search for groups..." class="search-input">
-            <button type="button" id="searchGroups" class="btn-primary">Search</button>
-          </div>
-          <div id="groupSearchResults" class="card"></div>
-        </div>
-
-        <!-- Your Groups Section -->
-        <div class="section">
-          <h3>Your Groups</h3>
-          <div id="groupsList" class="card"></div>
-        </div>
+    <div class="soc-body">
+      <section class="soc-feed" aria-labelledby="feed-h">
+        <h2 id="feed-h" class="rule-h">Activity</h2>
+        <div id="feed" aria-busy="true"></div>
       </section>
-    </main>
-    <footer>
-      <div class="container footer-content">2025 MetaPlay.</div>
-    </footer>
-  </div>
-</body>
+      <aside class="soc-aside">
+        <section aria-labelledby="req-h">
+          <h2 id="req-h" class="rule-h small-h">Requests <span class="count-badge" id="req-count" hidden></span></h2>
+          <div id="requests"></div>
+        </section>
+        <section aria-labelledby="friends-h">
+          <h2 id="friends-h" class="rule-h small-h">Your friends <span class="faint" id="friend-count"></span></h2>
+          <div id="friends" aria-busy="true"></div>
+        </section>
+      </aside>
+    </div>
 
+    <section class="sec" aria-labelledby="groups-h">
+      <div class="sec-head">
+        <h2 id="groups-h">Groups</h2>
+        <a class="btn btn-secondary btn-sm" href="/pages/group_create.html"><span class="ms" aria-hidden="true">add</span>New group</a>
+      </div>
+      <div class="groups" id="groups" aria-busy="true"></div>
+    </section>
+  </main>
+</body>
 </html>
