@@ -20,7 +20,21 @@ app.use(express.urlencoded({ extended: false }));
 
 // STATIC "PUBLIC" FOLDER (CSS, JS, images, etc.)
 // Served before session/auth middleware so static assets skip that work.
-app.use(express.static(path.resolve(__dirname, 'public')));
+// Guarded pages (protectedRoutes below) are skipped so their ensureAuth/
+// ensureAdmin routes handle them. The path is decoded, normalized and
+// lowercased like serve-static resolves it, so /pages/%64ashboard.html or
+// /pages/DASHBOARD.html can't reach the raw file either.
+const serveStatic = express.static(path.resolve(__dirname, 'public'));
+app.use((req, res, next) => {
+  try {
+    const file = path.posix.normalize(decodeURIComponent(req.path)).toLowerCase();
+    // protectedRoutes is defined further down; this runs per request, after it exists.
+    if (file in protectedRoutes) return next();
+  } catch (err) {
+    // Malformed escape: leave it to serve-static, as before.
+  }
+  return serveStatic(req, res, next);
+});
 
 // Session configuration
 app.use(
