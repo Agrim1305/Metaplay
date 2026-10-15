@@ -3,11 +3,11 @@ import { STATUS, api, library } from './api.js';
 import { html, el, icon } from './dom.js';
 import { toast } from './toast.js';
 
-const emit = (gameId, status) => document.dispatchEvent(new CustomEvent('library:change', { detail: { gameId, status } }));
+const emit = (game, status) => document.dispatchEvent(new CustomEvent('library:change', { detail: { gameId: game.id, status, game } }));
 
 async function apply(lib, game, status) {
   if (status) lib.set(game.id, status); else lib.delete(game.id);
-  emit(game.id, status);
+  emit(game, status);
   if (status) await api('/user-games', { method: 'POST', body: { gameId: game.id, status: STATUS[status].db } });
   else await api(`/user-games/${game.id}`, { method: 'DELETE' });
 }

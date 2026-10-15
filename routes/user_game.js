@@ -107,7 +107,8 @@ router.get(
           Game_ID AS "gameId",
           Rating AS "rating",
           Review AS "review",
-          Status AS "status"
+          Status AS "status",
+          Updated_At AS "updatedAt"
         FROM User_Game
         WHERE User_ID = $1
       `;
@@ -118,6 +119,8 @@ router.get(
         sql += ` AND Status = $${idx++}`;
         params.push(statusFilter);
       }
+
+      sql += ' ORDER BY Updated_At DESC';
 
       if (limitParam) {
         sql += ` LIMIT $${idx++}`;

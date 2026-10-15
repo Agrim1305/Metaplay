@@ -1,88 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard - MetaPlay</title>
-
-  <!-- Google Font: Inter -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-
-  <!-- Global stylesheet (header, footer, resets, etc.) -->
-  <link rel="stylesheet" href="/stylesheets/legacy.css" />
-
-  <!-- SCRIPTS: Header then Dashboard logic -->
-  <script src="/js/header.js" defer></script>
-  <script src="/js/toast.js" defer></script>
-  <script src="/js/dashboard.js" defer></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Home · MetaPlay</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16.png">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+  <link rel="stylesheet" href="/stylesheets/style.css">
+  <script type="module" src="/js/home.js"></script>
 </head>
+<body data-page="home">
+  <main class="page">
+    <section class="sec" aria-labelledby="hello">
+      <h1 id="hello" class="page-title">Welcome back</h1>
+      <div class="stats" id="stats" aria-busy="true">
+        <div class="stat"><div class="sk" style="height:30px;width:48px"></div><div class="sk sk-line" style="margin-top:10px"></div></div>
+        <div class="stat"><div class="sk" style="height:30px;width:48px"></div><div class="sk sk-line" style="margin-top:10px"></div></div>
+        <div class="stat"><div class="sk" style="height:30px;width:48px"></div><div class="sk sk-line" style="margin-top:10px"></div></div>
+        <div class="stat"><div class="sk" style="height:30px;width:48px"></div><div class="sk sk-line" style="margin-top:10px"></div></div>
+      </div>
+    </section>
 
-<body data-page="dashboard" class="app-page">
-  <div class="page-wrapper">
-    <!-- DYNAMIC HEADER PLACEHOLDER -->
-    <div id="header-include"></div>
-
-    <!-- MAIN CONTENT AREA -->
-    <main class="main-content" role="main">
-      <div class="container">
-        <!-- Welcome Banner -->
-        <section class="welcome-message" aria-label="Welcome">
-          <h2>Welcome, <span id="username">User</span>!</h2>
-          <p>Here's your activity overview:</p>
-        </section>
-
-        <!-- Dashboard Grid: User Sections and Trends -->
-        <div class="dashboard-row">
-          <!-- Global Game Trends -->
-          <div class="dashboard-row">
-            <section class="section" aria-labelledby="trending-title">
-              <h3 id="trending-title">Trending This Week</h3>
-              <div class="card-grid" id="trendingGamesGrid"></div>
-              <button type="button" id="trendingSeeAll" class="action-btn" aria-label="See all trending games">See
-                All</button>
-            </section>
-            <section class="section" aria-labelledby="coming-soon-title">
-              <h3 id="coming-soon-title">Coming Soon</h3>
-              <div class="card-grid" id="comingSoonGrid"></div>
-              <button type="button" id="comingSoonSeeAll" class="action-btn" aria-label="See all coming soon games">See
-                All</button>
-            </section>
-          </div>
-
-          <!-- User's Games -->
-          <div class="dashboard-row">
-            <section class="section" aria-labelledby="currently-playing-title">
-              <h3 id="currently-playing-title">Currently Playing</h3>
-              <div class="card-grid" id="currentGamesGrid"></div>
-              <button type="button" id="currentSeeAll" class="action-btn"
-                aria-label="See all games you are currently playing">See All</button>
-            </section>
-            <section class="section" aria-labelledby="wishlist-title">
-              <h3 id="wishlist-title">Wishlist</h3>
-              <div class="card-grid" id="wishlistedGamesGrid"></div>
-              <button type="button" id="wishlistSeeAll" class="action-btn"
-                aria-label="See all games in your wishlist">See All</button>
-            </section>
-            <section class="section" aria-labelledby="completed-title">
-              <h3 id="completed-title">Completed</h3>
-              <div class="card-grid" id="completedGamesGrid"></div>
-              <button type="button" id="completedSeeAll" class="action-btn" aria-label="See all completed games">See
-                All</button>
-            </section>
-          </div>
+    <section class="sec" aria-labelledby="lib-h">
+      <div class="lib-head">
+        <div class="lib-head-l">
+          <h2 id="lib-h">Your library</h2>
+          <div class="tabs rail" role="tablist" aria-label="Shelves" id="shelf-tabs"></div>
         </div>
+        <a id="view-all" href="/pages/discover.html?scope=playing">View all</a>
       </div>
-    </main>
+      <div class="grid-cards" id="shelf" role="tabpanel" aria-labelledby="lib-h" aria-busy="true"></div>
+    </section>
 
+    <section class="sched" id="schedule" aria-labelledby="cal-h"></section>
 
-    <!-- FOOTER -->
-    <footer>
-      <div class="container footer-content">
-        2025 MetaPlay.
+    <section class="sec" aria-labelledby="trend-h">
+      <div class="sec-head">
+        <h2 id="trend-h">Trending this week</h2>
+        <a href="/pages/discover.html?scope=trending">Browse all</a>
       </div>
-    </footer>
-  </div>
+      <div class="trend" id="trend" aria-busy="true"></div>
+    </section>
+  </main>
 </body>
-
 </html>
