@@ -205,7 +205,7 @@ app.use('/api', require('./routes/social'));
 // Google OAuth routes
 app.get(
   '/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
+  passport.authenticate('google', { scope: ['profile', 'email'], prompt: 'select_account' })
 );
 
 app.get(
