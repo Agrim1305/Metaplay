@@ -18,9 +18,64 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// ROUTE-GUARD HELPERS
+const showAuthRequired = (res) => res.redirect('/pages/auth_required.html');
+const showAccessDenied = (res) => res.redirect('/pages/accessDenied.html');
+
+function ensureAuth(req, res, next) {
+  const loggedInViaPassport = typeof req.isAuthenticated === 'function' && req.isAuthenticated();
+  const loggedInViaSession = Boolean(req.session.username);
+
+  if (loggedInViaPassport || loggedInViaSession) {
+    return next();
+  }
+  return showAuthRequired(res);
+}
+
+function ensureAdmin(req, res, next) {
+  const isLoggedIn = (typeof req.isAuthenticated === 'function' && req.isAuthenticated())
+    || Boolean(req.session.username);
+
+  if (!isLoggedIn) {
+    return showAuthRequired(res);
+  }
+
+  const isAdmin = (req.user && req.user.Role === 'admin') || Boolean(req.session.isAdmin);
+
+  return isAdmin ? next() : showAccessDenied(res);
+}
+
+// Protected routes (registered after the session middleware, further down).
+// Keys must stay lowercase: the static wrapper below matches lowercased paths.
+const protectedRoutes = {
+  '/pages/dashboard.html': 'dashboard.html',
+  '/pages/profile.html': 'profile.html',
+  '/pages/game.html': 'game.html',
+  '/pages/discover.html': 'discover.html',
+  '/pages/social.html': 'social.html',
+  '/pages/edit_profile.html': 'edit_profile.html',
+  '/pages/my_reviews.html': 'my_reviews.html',
+  '/pages/group_create.html': 'group_create.html',
+  '/pages/seeall.html': 'seeAll.html',
+  '/pages/admin.html': ['admin.html', ensureAdmin]
+};
+
 // STATIC "PUBLIC" FOLDER (CSS, JS, images, etc.)
 // Served before session/auth middleware so static assets skip that work.
-app.use(express.static(path.resolve(__dirname, 'public')));
+// Guarded pages (protectedRoutes above) are skipped so their ensureAuth/
+// ensureAdmin routes handle them. The path is decoded, normalized and
+// lowercased like serve-static resolves it, so /pages/%64ashboard.html or
+// /pages/DASHBOARD.html can't reach the raw file either.
+const serveStatic = express.static(path.resolve(__dirname, 'public'));
+app.use((req, res, next) => {
+  try {
+    const file = path.posix.normalize(decodeURIComponent(req.path)).toLowerCase();
+    if (file in protectedRoutes) return next();
+  } catch (err) {
+    // Malformed escape: leave it to serve-static, as before.
+  }
+  return serveStatic(req, res, next);
+});
 
 // Session configuration
 app.use(
@@ -87,42 +142,6 @@ app.use(async (req, res, next) => {
   return next();
 });
 
-// ROUTE-GUARD HELPERS
-const showAuthRequired = (res) => res.redirect('/pages/auth_required.html');
-const showAccessDenied = (res) => res.redirect('/pages/accessDenied.html');
-
-function ensureAuth(req, res, next) {
-  const loggedInViaPassport = typeof req.isAuthenticated === 'function' && req.isAuthenticated();
-  const loggedInViaSession = Boolean(req.session.username);
-
-  if (loggedInViaPassport || loggedInViaSession) {
-    return next();
-  }
-  return showAuthRequired(res);
-}
-
-function ensureAdmin(req, res, next) {
-  const isLoggedIn = (typeof req.isAuthenticated === 'function' && req.isAuthenticated())
-    || Boolean(req.session.username);
-
-  if (!isLoggedIn) {
-    return showAuthRequired(res);
-  }
-
-  const isAdmin = (req.user && req.user.Role === 'admin') || Boolean(req.session.isAdmin);
-
-  return isAdmin ? next() : showAccessDenied(res);
-}
-
-// Protected routes
-const protectedRoutes = {
-  '/pages/dashboard.html': 'dashboard.html',
-  '/pages/profile.html': 'profile.html',
-  '/pages/game.html': 'game.html',
-  '/pages/discover.html': 'discover.html',
-  '/pages/admin.html': ['admin.html', ensureAdmin]
-};
-
 Object.entries(protectedRoutes).forEach(([route, config]) => {
   const [file, ...middleware] = Array.isArray(config) ? config : [config];
   app.get(route, ensureAuth, ...middleware, (req, res) => {
@@ -186,7 +205,7 @@ app.use('/api', require('./routes/social'));
 // Google OAuth routes
 app.get(
   '/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
+  passport.authenticate('google', { scope: ['profile', 'email'], prompt: 'select_account' })
 );
 
 app.get(
