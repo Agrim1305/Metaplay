@@ -1,66 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Create Group - MetaPlay</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New group · MetaPlay</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16.png">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
   <link rel="stylesheet" href="/stylesheets/style.css">
-<!-- Google Font: Inter -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script type="module">
+    import '/js/ui/nav.js';
+    import { api } from '/js/ui/api.js';
 
-<!-- Shared styles -->
-  <!-- Dynamic Navbar -->
-  <script src="/js/header.js" defer></script>
-</head>
-<body class="app-page">
-  <div class="page-wrapper">
-    <div id="header-include"></div>
-    <main class="main-content" role="main">
-      <section class="social-section">
-        <h2>Create a New Group</h2>
-        <form id="groupCreateForm" class="group-create-form">
-          <label for="groupName">Group Name</label>
-          <input type="text" id="groupName" name="groupName" required>
-
-          <label for="groupDescription">Description</label>
-          <textarea id="groupDescription" name="groupDescription" rows="4"></textarea>
-
-          <button type="submit" class="action-btn">Create Group</button>
-        </form>
-        <div id="createGroupMessage"></div>
-      </section>
-    </main>
-    <footer>
-      <div class="container footer-content">2025 MetaPlay.</div>
-    </footer>
-  </div>
-  <script>
-    document.getElementById('groupCreateForm').addEventListener('submit', async function(e) {
+    const form = document.getElementById('form');
+    const msg = document.getElementById('msg');
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const name = document.getElementById('groupName').value.trim();
-      const description = document.getElementById('groupDescription').value.trim();
-      const messageDiv = document.getElementById('createGroupMessage');
-      messageDiv.textContent = '';
-      if (!name) {
-        messageDiv.textContent = 'Group name is required.';
-        return;
-      }
+      const f = form.elements;
+      const name = f.groupName.value.trim();
+      if (!name) { msg.textContent = 'Give the group a name.'; msg.className = 'form-msg err'; f.groupName.focus(); return; }
+      form.querySelector('button').disabled = true;
       try {
-        const response = await fetch('/api/groups', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ name, description })
-        });
-        if (!response.ok) throw new Error('Failed to create group');
-        messageDiv.textContent = 'Group created! Redirecting...';
-        setTimeout(() => {
-          window.location.href = '/pages/social.html';
-        }, 1200);
+        await api('/api/groups', { method: 'POST', body: { name, description: f.description.value.trim(), groupType: f.groupType.value } });
+        location.href = '/pages/social.html';
       } catch (err) {
-        messageDiv.textContent = 'Error: ' + (err.message || 'Failed to create group');
+        msg.textContent = `Couldn’t create the group: ${err.message}`;
+        msg.className = 'form-msg err';
+        form.querySelector('button').disabled = false;
       }
     });
   </script>
+</head>
+<body data-page="social">
+  <main class="page form-page">
+    <div>
+      <a class="g-back rv-back" href="/pages/social.html"><span class="ms" aria-hidden="true">arrow_back</span>Social</a>
+      <h1 class="page-title" style="margin-top:16px">New group</h1>
+      <p class="page-sub">A home for your co-op crew, backlog club or speedrun chat. You can delete it by leaving.</p>
+    </div>
+    <form id="form" novalidate>
+      <label class="field">Name
+        <input class="input" name="groupName" maxlength="100" required>
+      </label>
+      <label class="field">Description
+        <textarea class="input" name="description" rows="4" maxlength="500" placeholder="What is the group about?"></textarea>
+      </label>
+      <label class="field">Type
+        <select class="input" name="groupType" style="height:40px;font-size:15px;width:100%">
+          <option>Public</option>
+          <option>Private</option>
+          <option>Local</option>
+        </select>
+      </label>
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">Create group</button>
+        <a class="btn btn-secondary" href="/pages/social.html">Cancel</a>
+      </div>
+      <p class="form-msg" id="msg" role="status"></p>
+    </form>
+  </main>
 </body>
 </html>

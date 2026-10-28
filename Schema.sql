@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS User_Game (
     Rating INT DEFAULT NULL,
     Review TEXT DEFAULT NULL,
     Status VARCHAR(20) NOT NULL,
+    Updated_At TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (User_ID, Game_ID),
     CONSTRAINT user_game_status_check CHECK (Status IN ('wishlist', 'played', 'collection')),
     CONSTRAINT user_game_rating_check CHECK (Rating IS NULL OR (Rating BETWEEN 1 AND 10)),
@@ -108,6 +109,24 @@ CREATE TABLE IF NOT EXISTS User_Game (
 
 CREATE INDEX IF NOT EXISTS user_game_game_index ON User_Game(Game_ID);
 CREATE INDEX IF NOT EXISTS user_game_status_index ON User_Game(User_ID, Status);
+
+-- Status timestamps (added in the v4 redesign). Safe to re-run on an existing DB.
+ALTER TABLE User_Game ADD COLUMN IF NOT EXISTS Updated_At TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+CREATE OR REPLACE FUNCTION update_user_game_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.Updated_At = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS user_game_updated_at_trigger ON User_Game;
+
+CREATE TRIGGER user_game_updated_at_trigger
+    BEFORE UPDATE ON User_Game
+    FOR EACH ROW
+    EXECUTE FUNCTION update_user_game_updated_at();
 
 -- Game Reviews
 CREATE TABLE IF NOT EXISTS Game_Reviews (

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discover · MetaPlay</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16.png">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+  <link rel="stylesheet" href="/stylesheets/style.css">
+  <script type="module" src="/js/discover.js"></script>
+</head>
+<body data-page="discover">
+  <main class="page disc">
+    <section class="sec" aria-label="Search">
+      <h1 class="page-title">Discover</h1>
+      <label class="big-search">
+        <span class="ms" aria-hidden="true">search</span>
+        <span class="sr-only">Search games</span>
+        <input type="search" id="q" data-search placeholder="Search games" autocomplete="off" enterkeyhint="search">
+        <span class="hint" aria-hidden="true">Updates as you type</span>
+      </label>
+    </section>
+    <div class="disc-body">
+      <nav class="scopes" aria-label="Browse" id="scopes"></nav>
+      <section class="results" aria-label="Results">
+        <div class="chips" role="group" aria-label="Genres" id="genres"></div>
+        <div class="filters-row">
+          <div class="chips" role="group" aria-label="Platforms" id="platforms"></div>
+          <div class="filters-right">
+            <label class="sort">Sort
+              <select class="input" id="sort">
+                <option value="">Relevance</option>
+                <option value="-added">Most added</option>
+                <option value="-metacritic">Top rated</option>
+                <option value="-released">Newest</option>
+              </select>
+            </label>
+            <div class="seg icons" role="group" aria-label="View">
+              <button type="button" data-view="grid" aria-pressed="true" aria-label="Grid view"><span class="ms" aria-hidden="true">grid_view</span></button>
+              <button type="button" data-view="list" aria-pressed="false" aria-label="List view"><span class="ms" aria-hidden="true">view_list</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="results-count" id="count" aria-live="polite">&nbsp;</div>
+        <div id="results" class="grid-cards" aria-busy="true"></div>
+        <button type="button" class="btn btn-secondary" id="more" hidden>Load more</button>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

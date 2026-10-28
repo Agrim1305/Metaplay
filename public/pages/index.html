@@ -1,67 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MetaPlay Home</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MetaPlay · Your whole game life on one shelf</title>
+  <meta name="description" content="Track what you're playing, line up what's next, rate what you've finished, and see what your friends think.">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16.png">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+  <link rel="stylesheet" href="/stylesheets/landing.css">
+  <script type="module">
+    import { html } from '/js/ui/dom.js';
+    import { sized } from '/js/ui/art.js';
 
-  <!-- Google Font: Inter -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/stylesheets/style.css" />
-  <script src="/js/header.js" defer></script>
+    // Signed in already? Point the header at the app instead of the sign-in flow.
+    fetch('/get-user', { credentials: 'same-origin' }).then((r) => {
+      if (!r.ok) return;
+      document.querySelector('.l-nav').innerHTML = '<a class="l-cta" href="/pages/dashboard.html">Open your library</a>';
+    }).catch(() => {});
+
+    // Cover wall: real art from the public trending route, gradients if RAWG is unavailable.
+    const ARTS = [
+      'linear-gradient(135deg,#3b1d4a,#c2416b 60%,#ffb47a)', 'linear-gradient(160deg,#0f2b3d,#1f7a8c 55%,#bfe3c0)',
+      'linear-gradient(140deg,#1a1a2e,#4b3f8f 50%,#e0a3ff)', 'linear-gradient(150deg,#2d1606,#a2471a 55%,#f6c667)',
+      'linear-gradient(135deg,#071d14,#1f6f4a 55%,#d4f59b)', 'linear-gradient(160deg,#1d0b0b,#7d1d2a 50%,#ff7a59)',
+      'linear-gradient(140deg,#0b1430,#2b5bb8 55%,#9fd3ff)', 'linear-gradient(150deg,#201a12,#6b5a3a 55%,#e8d6a8)',
+    ];
+    const NAMES = ['Hades II', 'Elden Ring', 'Balatro', 'Outer Wilds', 'Celeste', 'Disco Elysium', 'Tunic', 'Stardew Valley',
+      'Baldur’s Gate 3', 'Animal Well', 'Sea of Stars', 'Pentiment'];
+    const fill = (games) => {
+      document.querySelectorAll('.l-col').forEach((col, c) => {
+        const list = Array.from({ length: 8 }, (_, i) => games[(c * 8 + i) % games.length]);
+        // Twice over, so the -50% scroll loops seamlessly.
+        col.innerHTML = String(html`${[...list, ...list].map((g, i) => html`
+          <div class="l-cv" style="background-image:${ARTS[(i + c * 3) % ARTS.length]}">
+            ${g.background_image ? html`<img src="${sized(g.background_image, 420)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+            <span>${g.name}</span>
+          </div>`)}`);
+      });
+    };
+    fill(NAMES.map((name) => ({ name })));
+    fetch('/rawg/public/trending').then((r) => (r.ok ? r.json() : [])).then((games) => { if (games.length >= 8) fill(games); }).catch(() => {});
+  </script>
 </head>
-<body class="auth-page">
-  <div class="page-wrapper">
-    <div id="header-include"></div>
-    <main class="main-content1" role="main">
-      <div class="container">
+<body>
+  <header class="l-head">
+    <a class="l-brand" href="/" aria-label="MetaPlay home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path class="logo-body" d="M5.8 2.5H16.4L19 5.1V21.2L12 16.6L5 21.2V3.3C5 2.9 5.4 2.5 5.8 2.5Z"/><rect class="logo-label" x="7.6" y="5.4" width="8.8" height="6.2" rx="0.7"/><rect class="logo-grip" x="7.6" y="13" width="8.8" height="0.9"/></svg>
+      <span>MetaPlay</span>
+    </a>
+    <nav class="l-nav" aria-label="Account">
+      <a class="l-link" href="/pages/login.html">Sign in</a>
+      <a class="l-cta" href="/pages/registration.html">Create account</a>
+    </nav>
+  </header>
 
-        <!-- TWO-COLUMN LANDING: left = pitch, right = auth actions -->
-        <div class="landing-split">
-
-          <!-- LEFT: welcome + what the site does -->
-          <section class="landing-intro">
-            <h1 class="landing-title">Welcome to MetaPlay</h1>
-            <p class="landing-lead">
-              Your personalized gaming hub — everything you play, want to play,
-              and have an opinion about, in one place.
-            </p>
-            <ul class="landing-points">
-              <li><strong>Discover</strong> the latest titles and what's coming soon.</li>
-              <li><strong>Track</strong> what you're playing, completed, and wishlisted.</li>
-              <li><strong>Review</strong> games and share ratings with friends.</li>
-              <li><strong>Connect</strong> with other players and build your circle.</li>
-            </ul>
-          </section>
-
-          <!-- RIGHT: auth actions -->
-          <section class="landing-auth">
-            <div class="login-card">
-              <h2 class="auth-heading">Get started</h2>
-              <p class="card-subtitle">Create an account or sign in to continue.</p>
-
-              <a href="/pages/registration.html" class="btn-primary1">Register</a>
-              <a href="/pages/login.html" class="btn-primary1">Login</a>
-
-              <div class="separator">OR</div>
-
-              <a href="/auth/google" class="btn-google-dark">
-                <img src="https://developers.google.com/identity/images/g-logo.png" alt="" class="google-icon" />
-                <span class="google-text">Sign in with Google</span>
-              </a>
-            </div>
-          </section>
-
-        </div>
+  <main class="l-main">
+    <section class="l-pitch">
+      <div class="l-chip"><i aria-hidden="true"></i>500,000+ GAMES · LIVE FROM RAWG</div>
+      <h1>Your whole<br>game life,<br><em>on one shelf.</em></h1>
+      <p class="l-lead">Track what you’re playing, line up what’s next, rate what you’ve finished, and see what your friends think before you buy.</p>
+      <div class="l-ctas">
+        <a class="l-cta big" href="/pages/registration.html">Start your shelf</a>
+        <a class="l-google l-light" href="/auth/google">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.5c2.1-1.9 3.3-4.7 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.5-2.7c-1 .7-2.3 1.1-3.8 1.1-2.9 0-5.4-2-6.3-4.6H2.1v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.7 14.1a6.6 6.6 0 0 1 0-4.2V7.1H2.1a11 11 0 0 0 0 9.8z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.1-3.1A11 11 0 0 0 2.1 7.1l3.6 2.8C6.6 7.3 9.1 5.4 12 5.4z"/></svg>
+          Continue with Google
+        </a>
       </div>
-    </main>
+      <p class="l-alt">Already tracking? <a href="/pages/login.html">Sign in</a></p>
+    </section>
 
-    <!--FOOTER-->
-    <footer>
-      <div class="container footer-content">2025 MetaPlay.</div>
-    </footer>
-  </div>
+    <section class="l-wall" aria-label="Cover wall preview">
+      <div class="l-cols" aria-hidden="true">
+        <div><div class="l-col"></div></div>
+        <div><div class="l-col slow rev"></div></div>
+        <div><div class="l-col"></div></div>
+      </div>
+      <div class="l-float review" aria-hidden="true">
+        <div class="l-who"><span>JL</span><div><b>jlee</b> <span class="l-muted">reviewed</span><br>Outer Wilds</div></div>
+        <div class="l-stars">
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg>
+        </div>
+        <p class="l-quote">“Play it blind. Don’t read anything else.”</p>
+      </div>
+      <div class="l-float status" aria-hidden="true">
+        <span class="l-play"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg></span>
+        <span><b>Hades II</b> <span class="l-muted">moved to</span> <b class="l-coral">Playing</b></span>
+      </div>
+    </section>
+  </main>
+
+  <section class="l-features" aria-label="What MetaPlay does">
+    <div class="l-feat"><div class="k l-coral">01 · DISCOVER</div><h2>Trending and upcoming</h2><p>A weekly release schedule, filtered by genre and platform.</p></div>
+    <div class="l-feat"><div class="k" style="color:var(--amber)">02 · TRACK</div><h2>Wishlist, playing, done</h2><p>One tap moves a game between shelves. Your library builds itself.</p></div>
+    <div class="l-feat"><div class="k" style="color:var(--sky)">03 · REVIEW</div><h2>Rate on a 10-point scale</h2><p>Score it, write a short take, and watch your profile build a picture of your taste.</p></div>
+    <div class="l-feat"><div class="k" style="color:var(--mint)">04 · CONNECT</div><h2>Friends and groups</h2><p>See what your circle is playing and what they rated it.</p></div>
+  </section>
 </body>
-
 </html>
